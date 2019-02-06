@@ -1,0 +1,20 @@
+use crate::mmio::MMIO_BASE;
+
+pub static GPFSEL0: u32 = MMIO_BASE + 0x00200000;
+pub static GPFSEL1: u32 = MMIO_BASE + 0x00200004;
+pub static GPFSEL2: u32 = MMIO_BASE + 0x00200008;
+pub static GPFSEL3: u32 = MMIO_BASE + 0x0020000C;
+pub static GPFSEL4: u32 = MMIO_BASE + 0x00200010;
+pub static GPFSEL5: u32 = MMIO_BASE + 0x00200014;
+pub static GPSET0: u32 = MMIO_BASE + 0x0020001C;
+pub static GPSET1: u32 = MMIO_BASE + 0x00200020;
+pub static GPCLR0: u32 = MMIO_BASE + 0x00200028;
+pub static GPLEV0: u32 = MMIO_BASE + 0x00200034;
+pub static GPLEV1: u32 = MMIO_BASE + 0x00200038;
+pub static GPEDS0: u32 = MMIO_BASE + 0x00200040;
+pub static GPEDS1: u32 = MMIO_BASE + 0x00200044;
+pub static GPHEN0: u32 = MMIO_BASE + 0x00200064;
+pub static GPHEN1: u32 = MMIO_BASE + 0x00200068;
+pub static GPPUD: u32 = MMIO_BASE + 0x00200094;
+pub static GPPUDCLK0: u32 = MMIO_BASE + 0x00200098;
+pub static GPPUDCLK1: u32 = MMIO_BASE + 0x0020009C;
