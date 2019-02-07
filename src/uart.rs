@@ -20,7 +20,6 @@ static UART_ICR: u32 = MMIO_BASE + 0x00201044;
 pub struct UART {
     mu_io_addr: u32,
     mu_lsr_addr: u32,
-    exit_cntl: bool,
 }
 
 impl UART {
@@ -28,7 +27,6 @@ impl UART {
         UART{
             mu_io_addr: UART_DR,
             mu_lsr_addr: UART_FR,
-            exit_cntl: false,
         }
     }
 
@@ -75,7 +73,7 @@ impl UART {
         }
     }
 
-    pub fn put(&self, c: char) {
+    pub fn put(&mut self, c: char) {
         unsafe {
             while read(self.mu_lsr_addr) & 0x20 != 0 {}
             match c {
@@ -101,7 +99,7 @@ impl UART {
         }
     }
 
-    pub fn write(&self, data: &str) {
+    pub fn write(&mut self, data: &str) {
         for c in data.as_bytes() {
             self.put(*c as char);
         }

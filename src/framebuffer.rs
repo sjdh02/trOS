@@ -2,26 +2,54 @@ use crate::mbox::*;
 
 static FONT: &'static [u8; 2080] = include_bytes!("font.psf");
 
+/// Represent a PSF font. This struct is packed to allow the use of
+/// `core::ptr::read`.
+#[derive(Clone, Copy, Debug)]
+#[repr(packed)]
+struct PSFFont {
+    magic: u32,
+    version: u32,
+    headersize: u32,
+    flags: u32,
+    numglyph: u32,
+    bytes_per_glyph: u32,
+    height: u32,
+    width: u32,
+    glyphs: u8
+}
+
+/// Represent the linear framebuffer of the RPI3. Note that this struct holds a
+/// raw pointer, and unsafe code acts on this to write to the framebuffer. See
+/// the `impl`'s of this function for more details.
+#[derive(Clone, Copy)]
 pub struct FrameBufferStream {
-    pub width: u32,
-    pub height: u32,
-    pub pitch: u32,
-    pub ptr: *mut u8,
+    width: u32,
+    height: u32,
+    pitch: u32,
+    x: u32,
+    y: u32,
+    ptr: *mut u8,
 }
 
 impl FrameBufferStream {
-
+    /// Instantiate a new `FrameBufferStream` with a given width and height.
+    /// The `ptr` and `pitch` fields are instantiated with filler values.
     pub fn new(width: u32, height: u32) -> FrameBufferStream {
         FrameBufferStream{
             width: width,
             height: height,
-            // The following two values are set for real in init()
             pitch: 0,
+            x: 0,
+            y: 0,
             ptr: 0xDEADBEEF as *mut u8,
         }
     }
 
-    pub fn init(&mut self, mbox: &mut MailBox) {
+    /// Initialize the linear framebuffer. Performs a mailbox call to set the
+    /// resolution, then sets the values for `pitch` and `ptr` of the
+    /// `FrameBufferStream` it was called on.
+    pub fn init(&mut self, mbox: &mut MailBox) -> Result<bool, &str>{
+        // Clear the mailbox and setup the new call
         mbox.clear();
         mbox.mbox[0] = 35 * 4;
         mbox.mbox[1] = MBOX_REQUEST;
@@ -70,6 +98,9 @@ impl FrameBufferStream {
             mbox.mbox[28] &= 0x3FFFFFFF;
             self.pitch = mbox.mbox[33];
             self.ptr = mbox.mbox[28] as *mut u8;
+            return Ok(true);
+        } else {
+            return Err("Failed to initialize framebuffer!");
         }
     }
 
@@ -91,6 +122,7 @@ impl FrameBufferStream {
         for y in 0..self.height {
             for x in 0..self.width * 2 {
                 let offset = y * self.pitch + x * 3;
+                // @CLEANUP: Could probably make this a little more clean.
                 match color {
                     (Some(r), Some(g), Some(b)) => {
                         self.write_at_offset(offset, r);
@@ -111,12 +143,12 @@ impl FrameBufferStream {
                         self.write_at_offset(offset, 255);
                         self.write_at_offset(offset + 1, 255);
                         self.write_at_offset(offset + 2, 255);
-                    }
+                    },
                     (Some(r), None, None) => {
                         self.write_at_offset(offset, r);
                         self.write_at_offset(offset + 1, 255);
                         self.write_at_offset(offset + 2, 255);
-                    }
+                    },
                     (None, Some(g), None) => {
                         self.write_at_offset(offset, 255);
                         self.write_at_offset(offset + 1, g);
@@ -126,15 +158,20 @@ impl FrameBufferStream {
                         self.write_at_offset(offset, r);
                         self.write_at_offset(offset + 1, 255);
                         self.write_at_offset(offset + 2, b);
-                    }
+                    },
                     (Some(r), Some(g), None) => {
                         self.write_at_offset(offset, r);
                         self.write_at_offset(offset + 1, g);
                         self.write_at_offset(offset + 2, 255);
-                    }
-                    _ => unreachable!(),
+                    },
                 }
             }
         }
+    }
+
+    pub fn write(&self, data: &str) {
+        let font: PSFFont = unsafe { core::ptr::read(FONT.as_ptr() as *const _) };
+        let bytes_per_line = (font.width + 7) / 8;
+        serial_put!("{:?}\n", font);
     }
 }
