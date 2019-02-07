@@ -22,7 +22,7 @@ cargo xbuild --target aarch64-unknown-none
 the binary will be in the ususal place for compiled rust code.
 
 # Running
-You can run this with qemu or use objdump to throw it in an img file for booting
+You can run this with qemu or use objcopy to throw it in an img file for booting
 on real hardware. Note that it hasn't been tested on real hardware, but should work
 fine. Running with qemu is easy:
 ```
