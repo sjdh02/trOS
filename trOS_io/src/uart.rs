@@ -1,8 +1,8 @@
 use core::fmt;
 
-use crate::mmio::*;
-use crate::gpio::{GPFSEL1, GPPUD, GPPUDCLK0};
-use crate::mbox::*;
+use trOS_phys::mmio::*;
+use trOS_phys::gpio::{GPFSEL1, GPPUD, GPPUDCLK0};
+use trOS_mbox::mbox::*;
 use spin::Mutex;
 use lazy_static::lazy_static;
 

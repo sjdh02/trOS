@@ -1,0 +1,17 @@
+[package]
+name = "trOS_mbox"
+version = "0.1.0"
+authors = ["Samuel JD Hood <sjdh@sjdh.us>"]
+edition = "2018"
+
+[profile.dev]
+opt-level = 's'
+debug = true
+
+[profile.release]
+opt-level = 'z'
+lto = true
+debug = false
+
+[dependencies]
+trOS_phys = { path = "../trOS_phys" }

@@ -1,10 +1,10 @@
-use crate::mbox::*;
+use trOS_mbox::mbox::*;
 
+// @TODO: Remove this when SD card support lands.
 static FONT: &'static [u8; 2080] = include_bytes!("font.psf");
 
 /// Represent a PSF font. This struct is packed to allow the use of
 /// `core::ptr::read`.
-#[derive(Clone, Copy, Debug)]
 #[repr(packed)]
 struct PSFFont {
     magic: u32,
@@ -21,7 +21,6 @@ struct PSFFont {
 /// Represent the linear framebuffer of the RPI3. Note that this struct holds a
 /// raw pointer, and unsafe code acts on this to write to the framebuffer. See
 /// the `impl`'s of this function for more details.
-#[derive(Clone, Copy)]
 pub struct FrameBufferStream {
     width: u32,
     height: u32,
@@ -48,7 +47,7 @@ impl FrameBufferStream {
     /// Initialize the linear framebuffer. Performs a mailbox call to set the
     /// resolution, then sets the values for `pitch` and `ptr` of the
     /// `FrameBufferStream` it was called on.
-    pub fn init(&mut self, mbox: &mut MailBox) -> Result<bool, &str>{
+    pub fn init(&mut self, mbox: &mut MailBox) -> Result<(), &str>{
         // Clear the mailbox and setup the new call
         mbox.clear();
         mbox.mbox[0] = 35 * 4;
@@ -98,80 +97,46 @@ impl FrameBufferStream {
             mbox.mbox[28] &= 0x3FFFFFFF;
             self.pitch = mbox.mbox[33];
             self.ptr = mbox.mbox[28] as *mut u8;
-            return Ok(true);
+            return Ok(());
         } else {
             return Err("Failed to initialize framebuffer!");
         }
     }
 
     /// Write to the framebuffer at a given offset.
-    fn write_at_offset(&mut self, offset: u32, d: u8) {
+    fn write_at_offset(&mut self, offset: u32, d: u8) -> Result<(), &str> {
         if offset > 8298239 {
-            serial_put!("WARNING: Failed to write at offset {},
-                         maximum offset is 8298239!\n", offset);
-            return;
+            return Err("WARNING: failed to write to offset, maximum offset is 8298239!");
         }
         unsafe {
             *self.ptr.offset(offset as isize) = d;
         }
+        Ok(())
     }
 
     /// Clear the framebuffer to a given RGB color, in the most
     /// inneficient way possible.
-    pub fn clear(&mut self, color: (Option<u8>, Option<u8>, Option<u8>)) {
+    pub fn clear(&mut self, color: (u8, u8, u8)) {
         for y in 0..self.height {
             for x in 0..self.width * 2 {
                 let offset = y * self.pitch + x * 3;
                 // @CLEANUP: Could probably make this a little more clean.
                 match color {
-                    (Some(r), Some(g), Some(b)) => {
-                        self.write_at_offset(offset, r);
-                        self.write_at_offset(offset + 1, g);
-                        self.write_at_offset(offset + 2, b);
-                    },
-                    (None, Some(g), Some(b)) => {
-                        self.write_at_offset(offset, 255);
-                        self.write_at_offset(offset + 1, g);
-                        self.write_at_offset(offset + 2, b);
-                    },
-                    (None, None, Some(b)) => {
-                        self.write_at_offset(offset, 255);
-                        self.write_at_offset(offset + 1, 255);
-                        self.write_at_offset(offset + 2, b);
-                    },
-                    (None, None, None) => {
-                        self.write_at_offset(offset, 255);
-                        self.write_at_offset(offset + 1, 255);
-                        self.write_at_offset(offset + 2, 255);
-                    },
-                    (Some(r), None, None) => {
-                        self.write_at_offset(offset, r);
-                        self.write_at_offset(offset + 1, 255);
-                        self.write_at_offset(offset + 2, 255);
-                    },
-                    (None, Some(g), None) => {
-                        self.write_at_offset(offset, 255);
-                        self.write_at_offset(offset + 1, g);
-                        self.write_at_offset(offset + 2, 255);
-                    },
-                    (Some(r), None, Some(b)) => {
-                        self.write_at_offset(offset, r);
-                        self.write_at_offset(offset + 1, 255);
-                        self.write_at_offset(offset + 2, b);
-                    },
-                    (Some(r), Some(g), None) => {
-                        self.write_at_offset(offset, r);
-                        self.write_at_offset(offset + 1, g);
-                        self.write_at_offset(offset + 2, 255);
-                    },
+                    (r, g, b) => {
+                        self.write_at_offset(offset, r).unwrap();
+                        self.write_at_offset(offset + 1, g).unwrap();
+                        self.write_at_offset(offset + 2, b).unwrap();
+                    }
                 }
             }
         }
     }
 
-    pub fn write(&self, data: &str) {
-        let font: PSFFont = unsafe { core::ptr::read(FONT.as_ptr() as *const _) };
-        let bytes_per_line = (font.width + 7) / 8;
-        serial_put!("{:?}\n", font);
+    pub fn write(&mut self, data: &str) {
+        let font = unsafe { core::ptr::read(FONT.as_ptr() as *const PSFFont) };
+        // Font encoding info:
+        // Each glyph is sixteen bytes long, with each byte encoding one row
+        // of the glyph. Knowing this, it might even be easier to just, I don't know,
+        // index the array to find the glyph lines and go from there.
     }
 }

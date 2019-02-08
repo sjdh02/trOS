@@ -19,15 +19,44 @@ version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "tOS"
+name = "spin"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "trOS"
 version = "0.1.0"
 dependencies = [
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "panic-abort 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "spin 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "spin 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "trOS_io 0.1.0",
+ "trOS_mbox 0.1.0",
 ]
+
+[[package]]
+name = "trOS_io"
+version = "0.1.0"
+dependencies = [
+ "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "spin 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "trOS_mbox 0.1.0",
+ "trOS_phys 0.1.0",
+]
+
+[[package]]
+name = "trOS_mbox"
+version = "0.1.0"
+dependencies = [
+ "trOS_phys 0.1.0",
+]
+
+[[package]]
+name = "trOS_phys"
+version = "0.1.0"
 
 [metadata]
 "checksum lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a374c89b9db55895453a74c1e38861d9deec0b01b405a82516e9d5de4820dea1"
 "checksum panic-abort 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2c14a66511ed17b6a8b4256b868d7fd207836d891db15eea5195dbcaf87e630f"
 "checksum spin 0.4.10 (registry+https://github.com/rust-lang/crates.io-index)" = "ceac490aa12c567115b40b7b7fceca03a6c9d53d5defea066123debc83c5dc1f"
+"checksum spin 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "44363f6f51401c34e7be73db0db371c04705d35efbe9f7d6082e03a921a32c55"

@@ -5,15 +5,13 @@
 #![allow(dead_code)]
 #![allow(non_snake_case)] // Silence rust complaining about tOS vs t_os
 
-
-mod gpio;
-mod mmio;
-mod mbox;
 #[macro_use]
-mod uart;
-mod framebuffer;
+extern crate trOS_io;
 
-use uart::UART0;
+use trOS_io::uart::UART0;
+
+use trOS_io::framebuffer;
+use trOS_mbox::mbox;
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {

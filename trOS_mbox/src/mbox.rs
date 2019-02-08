@@ -1,4 +1,4 @@
-use crate::mmio::*;
+use trOS_phys::mmio::*;
 
 
 pub static VCORE_MBOX: u32 = MMIO_BASE + 0x0000B880;
