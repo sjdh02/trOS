@@ -17,16 +17,18 @@ Here is some stuff that doesn't quite work:
 You'll need `cargo` and `cargo-xbuild` for the build. once you have those,
 run:
 ```
-cargo xbuild --target aarch64-unknown-none
+sh build
+# or
+./build
 ```
-the binary will be in the ususal place for compiled rust code.
+the binary will be in `trOS_core/target/aarch64-unknown-none/debug/`.
 
 # Running
 You can run this with qemu or use objcopy to throw it in an img file for booting
 on real hardware. Note that it hasn't been tested on real hardware, but should work
 fine. Running with qemu is easy:
 ```
-qemu-system-aarch64 -kernel target/aarch64-unknown-none/debug/tOS -m 256 -M raspi3 -serial stdio
+qemu-system-aarch64 -kernel trOS_core/target/aarch64-unknown-none/debug/trOS -m 256 -M raspi3 -serial stdio
 ```
 You can redirect `-serial` wherever you prefer. 
 
