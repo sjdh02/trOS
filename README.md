@@ -37,4 +37,4 @@ It invokes the `xbuild` command and then fires up qemu.
 
 # Disclaimer
 A lot of this code is far from safe and likely not too idiomatic. Don't expect anything amazing here,
-at least not for know. Just know that I do intend to improve it over time.
+at least not for now. Just know that I do intend to improve it over time.
