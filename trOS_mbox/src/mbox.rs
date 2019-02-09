@@ -1,16 +1,16 @@
 use trOS_phys::mmio::*;
 
 
-pub static VCORE_MBOX: u32 = MMIO_BASE + 0x0000B880;
-pub static MBOX_READ: u32 = VCORE_MBOX + 0x0;
+pub static VCORE_MBOX: u32 = MMIO_BASE + 0x0000_B880;
+pub static MBOX_READ: u32 = VCORE_MBOX;
 pub static MBOX_POLL: u32 = VCORE_MBOX + 0x10;
 pub static MBOX_SENDER: u32 = VCORE_MBOX + 0x14;
 pub static MBOX_STATUS: u32 = VCORE_MBOX + 0x18;
 pub static MBOX_CONFIG: u32 = VCORE_MBOX + 0x1C;
 pub static MBOX_WRITE: u32 = VCORE_MBOX + 0x20;
-pub static MBOX_RESPONSE: u32 = 0x80000000;
-pub static MBOX_FULL: u32 = 0x80000000;
-pub static MBOX_EMPTY: u32 = 0x40000000;
+pub static MBOX_RESPONSE: u32 = 0x8000_0000;
+pub static MBOX_FULL: u32 = 0x8000_0000;
+pub static MBOX_EMPTY: u32 = 0x4000_0000;
 pub static MBOX_REQUEST: u32 = 0;
 // Channels
 pub static MBOX_CH_POWER: u32 = 0;
@@ -38,9 +38,15 @@ pub struct MailBox {
     pub mbox: [u32; 36],
 }
 
+impl Default for MailBox {
+    fn default() -> Self {
+        MailBox::new()
+    }
+}
+
 impl MailBox {
     /// Initialize a new `MailBox` struct with a zeroed-out `mbox` array.
-    pub fn new() -> MailBox {
+    pub fn new() -> Self {
         MailBox{
             // Zero initialize
             mbox: [0; 36]
@@ -58,15 +64,15 @@ impl MailBox {
         let r = (ptr as u32) & (!0xF) | d & 0xF;
 
         unsafe {
-            while (read(MBOX_STATUS) & MBOX_FULL) != 0 {
+            while (read(MBOX_STATUS as *const u32) & MBOX_FULL) != 0 {
                 wait(1);
             }
-            write(MBOX_WRITE, r);
+            write(MBOX_WRITE as *mut u32, r);
             loop {
-                while (read(MBOX_STATUS) & MBOX_EMPTY) != 0 {
+                while (read(MBOX_STATUS as *const u32) & MBOX_EMPTY) != 0 {
                     wait(1);
                 }
-                if read(MBOX_READ) == r { return self.mbox[1] == MBOX_RESPONSE}
+                if read(MBOX_READ as *const u32) == r { return self.mbox[1] == MBOX_RESPONSE}
             }
         }
     }

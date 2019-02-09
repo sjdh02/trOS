@@ -1,9 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(global_asm)]
-#![feature(asm)]
-#![allow(dead_code)]
-#![allow(non_snake_case)] // Silence rust complaining about tOS vs t_os
+#![allow(non_snake_case)]
 
 #[macro_use]
 extern crate trOS_io;
@@ -34,6 +32,10 @@ global_asm!(include_str!("boot.S"));
 // 4. On enter key, parse buffer and execute command within.
 // We'll need to track the index in a buffer to do this, but it should be easy
 // enough to actually implement.
+
+// @TODO: Spend some time refactoring to remove unsafe code.
+
+// @TODO: Initialize UART1 before UART0 for debugging.
 
 #[no_mangle]
 extern "C" fn kmain() -> ! {

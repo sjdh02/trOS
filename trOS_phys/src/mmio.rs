@@ -1,6 +1,7 @@
 use core::ptr::{read_volatile, write_volatile};
+use core::sync::atomic::{fence, Ordering};
 
-pub static MMIO_BASE: u32 = 0x3F000000;
+pub static MMIO_BASE: u32 = 0x3F00_0000;
 
 // Note regarding these functions being marked as unsafe:
 // You cannot call these functions safely on their own,
@@ -12,13 +13,15 @@ pub static MMIO_BASE: u32 = 0x3F000000;
 // be incorrect.
 
 /// Write a `u32` piece of data to a `u32` address.
-pub unsafe fn write(reg: u32, data: u32) {
-    write_volatile(reg as *mut u32, data);
+pub unsafe fn write(reg: *mut u32, data: u32) {
+    fence(Ordering::SeqCst);
+    write_volatile(reg, data);
 }
 
 /// Read a `u32` piece of data from a `u32` address.
-pub unsafe fn read(reg: u32) -> u32 {
-    read_volatile(reg as *mut u32)
+pub unsafe fn read(reg: *const u32) -> u32 {
+    fence(Ordering::SeqCst);
+    read_volatile(reg)
 }
 
 /// Wait for a given number of cycles by using inline assembly that the
