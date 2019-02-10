@@ -4,12 +4,13 @@ trOS is a small, rust and assembly, aarch64 rpi3 bare metal OS thingy.
 Here is some stuff that works:
 * mailbox calls
 * uart0
-* framebuffer (initializing/clearing)
+* framebuffer (initializing/clearing/printing characters)
 * gpio
 * mmio
 
 Here is some stuff that doesn't quite work:
-* drawing characters to the framebuffer (working on this)
+* USB
+*networking
 * reading from the sd card
 * anything not mentioned in the "stuff that works" section
 
