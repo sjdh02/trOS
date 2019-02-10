@@ -1,3 +1,0 @@
-#!/bin/sh
-cd trOS_core
-cargo xbuild --target aarch64-unknown-none && qemu-system-aarch64 -kernel target/aarch64-unknown-none/debug/trOS -m 256 -M raspi3 -serial stdio
