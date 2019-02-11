@@ -32,39 +32,39 @@ pub fn powerOff() void {
     }
 
     // Power off GPIO pins
-    mmio.write(gpio.GPFSEL0, 0);
-    mmio.write(gpio.GPFSEL1, 0);
-    mmio.write(gpio.GPFSEL2, 0);
-    mmio.write(gpio.GPFSEL3, 0);
-    mmio.write(gpio.GPFSEL4, 0);
-    mmio.write(gpio.GPFSEL5, 0);
-    mmio.write(gpio.GPPUD, 0);
+    mmio.writeSafe(gpio.GPFSEL0, 0);
+    mmio.writeSafe(gpio.GPFSEL1, 0);
+    mmio.writeSafe(gpio.GPFSEL2, 0);
+    mmio.writeSafe(gpio.GPFSEL3, 0);
+    mmio.writeSafe(gpio.GPFSEL4, 0);
+    mmio.writeSafe(gpio.GPFSEL5, 0);
+    mmio.writeSafe(gpio.GPPUD, 0);
     mmio.wait(150);
-    mmio.write(gpio.GPPUDCLK0, 0xFFFFFFFF);
-    mmio.write(gpio.GPPUDCLK1, 0xFFFFFFFF);
+    mmio.writeSafe(gpio.GPPUDCLK0, 0xFFFFFFFF);
+    mmio.writeSafe(gpio.GPPUDCLK1, 0xFFFFFFFF);
     mmio.wait(150);
-    mmio.write(gpio.GPPUDCLK0, 0);
-    mmio.write(gpio.GPPUDCLK1, 0);
+    mmio.writeSafe(gpio.GPPUDCLK0, 0);
+    mmio.writeSafe(gpio.GPPUDCLK1, 0);
 
     // Power off SoC
-    r = mmio.read(PM_RSTS);
+    r = mmio.readSafe(PM_RSTS);
     r &= ~u32(0xfffffaaa);
     // Indicate halt
     r |= 0x555;
-    mmio.write(PM_RSTS, PM_WDOG_MAGIC | r);
-    mmio.write(PM_RSTS, PM_WDOG_MAGIC | 10);
-    mmio.write(PM_RSTS, PM_WDOG_MAGIC | PM_RSTC_FULLRST);
+    mmio.writeSafe(PM_RSTS, PM_WDOG_MAGIC | r);
+    mmio.writeSafe(PM_RSTS, PM_WDOG_MAGIC | 10);
+    mmio.writeSafe(PM_RSTS, PM_WDOG_MAGIC | PM_RSTC_FULLRST);
 }
 
 /// Reset the SoC
 pub fn reset() void {
     var r: u32 = 0;
 
-    r = mmio.read(PM_RSTS);
+    r = mmio.readSafe(PM_RSTS);
     r &= ~u32(0xfffffaaa);
-    mmio.write(PM_RSTS, PM_WDOG_MAGIC | r);
-    mmio.write(PM_RSTS, PM_WDOG_MAGIC | 10);
-    mmio.write(PM_RSTS, PM_WDOG_MAGIC | PM_RSTC_FULLRST);
+    mmio.writeSafe(PM_RSTS, PM_WDOG_MAGIC | r);
+    mmio.writeSafe(PM_RSTS, PM_WDOG_MAGIC | 10);
+    mmio.writeSafe(PM_RSTS, PM_WDOG_MAGIC | PM_RSTC_FULLRST);
 }
 
 // Constants for random number generator
@@ -73,18 +73,17 @@ pub const RNG_STATUS: u32 = mmio.MMIO_BASE + 0x00104004;
 pub const RNG_DATA: u32 = mmio.MMIO_BASE + 0x00104008;
 pub const RNG_INT_MASK: u32 = mmio.MMIO_BASE + 0x00104010;
 
-
 /// Initialize the random number generator
 /// #NOTE: Currently just assuming this works until I can test on real hardware.
 pub fn randInit() void {
-    mmio.write(RNG_STATUS, 0x40000);
-    var r = mmio.read(RNG_INT_MASK);
+    mmio.writeSafe(RNG_STATUS, 0x40000);
+    var r = mmio.readSafe(RNG_INT_MASK);
     r |= 1;
-    mmio.write(RNG_INT_MASK, r);
-    r = mmio.read(RNG_CTRL);
+    mmio.writeSafe(RNG_INT_MASK, r);
+    r = mmio.readSafe(RNG_CTRL);
     r |= 1;
-    mmio.write(RNG_CTRL, r);
-    while (@intToPtr(*volatile u32, RNG_STATUS).* >> 24 != 0) {
+    mmio.writeSafe(RNG_CTRL, r);
+    while ((@intToPtr(*volatile u32, RNG_STATUS).* >> 24) != 0) {
         mmio.wait(1);
     }
 }
@@ -93,5 +92,5 @@ pub fn randInit() void {
 pub fn getRand(min: usize, max: usize) usize {
     if (min > max)
         return 0;
-    return mmio.read(RNG_DATA) % (max-min) + min;
+    return ((mmio.readSafe(RNG_DATA)) % (max-min)) + min;
 }

@@ -11,10 +11,8 @@ const framebuffer = @import("index.zig").framebuffer;
 // a string.contains function of some kind since there will be arguments present
 // as well.
 
-// @TODO: Initially, initialize UART1, then initialize UART0 in case of failure
-// when initialize UART0.
-
 // @TODO: Re-do docs.
+// @TODO: Refactor UART module.
 
 pub fn panic(msg: []const u8, error_stack_trace: ?*builtin.StackTrace) noreturn {
     @setCold(true);
@@ -26,7 +24,6 @@ pub fn panic(msg: []const u8, error_stack_trace: ?*builtin.StackTrace) noreturn 
 
 export fn kmain() noreturn {
     uart.write("tOS v0.1\n");
-    framebuffer.init() catch @panic("Unable to initialize framebuffer!\n");
     framebuffer.write("READY:> ");
     uart.write("READY:> ");
     while (true) {

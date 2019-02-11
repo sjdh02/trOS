@@ -5,7 +5,5 @@ pub const uart = @import("io/uart.zig");
 pub const framebuffer = @import("vga/framebuffer.zig");
 pub const regs = @import("regs.zig");
 
-
 pub const errorTypes = @import("errors.zig");
 pub const util = @import("util.zig");
-pub const cmd = @import("cmd.zig");

@@ -42,15 +42,15 @@ pub var mbox: [36]u32 align(16) = []u32{0}**36;
 /// query will always return 0.
 pub fn mboxCall(d: u8) bool {
     const r: u32 = @intCast(u32, (@ptrToInt(&mbox) & ~u32(0xF))) | @intCast(u32, (@intCast(u32, d) & 0xF));
-    while(mmio.read(MBOX_STATUS) & MBOX_FULL != 0) {
+    while(mmio.readSafe(MBOX_STATUS) & MBOX_FULL != 0) {
         mmio.wait(1);
     }
-    mmio.write(MBOX_WRITE, r);
+    mmio.writeSafe(MBOX_WRITE, r);
     while (true) {
-        while (mmio.read(MBOX_STATUS) & MBOX_EMPTY != 0) {
+        while (mmio.readSafe(MBOX_STATUS) & MBOX_EMPTY != 0) {
             mmio.wait(1);
         }
-        if (mmio.read(MBOX_READ) == r)
+        if (mmio.readSafe(MBOX_READ) == r)
             return mbox[1] == MBOX_RESPONSE;
     }
 }

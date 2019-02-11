@@ -1,16 +1,16 @@
+const index = @import("index.zig");
+const errorTypes = index.errorTypes;
+
 pub const Register = union(enum) {
     ReadOnly: u32,
     WriteOnly: u32,
     ReadWrite: u32,
 };
 
-
-// @TODO: Move this to test suite and make this return a custom test error so we can use
-// std.testing.expectError.
-fn write(reg: Register) void {
+fn write(reg: Register) errorTypes.RegisterError!void {
     switch (reg) {
         Register.ReadOnly => {
-            @panic("Wrong register type!");
+            return errorTypes.RegisterError.BadType;
         },
         else => {
             return;
@@ -18,7 +18,7 @@ fn write(reg: Register) void {
     }
 }
 
-test "Register union" {
+test "Register Union" {
     const std = @import("std");
     const x = Register{ .ReadOnly = 1234 };
     const y = Register{ .WriteOnly = 1234 };
@@ -27,6 +27,8 @@ test "Register union" {
     std.debug.assert(@typeOf(y) == Register);
     std.debug.assert(@typeOf(z) == Register);
 
-    write(y);
-    write(z);
+    std.testing.expectError(errorTypes.RegisterError.BadType, (write(x)));
+
+    try write(y);
+    try write(z);
 }
