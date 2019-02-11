@@ -36,7 +36,7 @@ pub const FrameBuffer = struct {
     // @NOTE: This should work well for on-the-fly font changes.
     // For example, we could start with a non-unicode font, then
     // swap to one if the need arises and continue printing seemlessly.
-    var font: *const PSFFont = undefined;
+    var font: *const PSFFont = @ptrCast(*const PSFFont, &fontEmbed);
     var ptr: [*]volatile u8 = undefined;
 
     var column: u32 = 0;
@@ -97,7 +97,6 @@ pub const FrameBuffer = struct {
             height = mbox.mbox[6];
             pitch = mbox.mbox[33];
             ptr = @intToPtr([*]volatile u8, mbox.mbox[28]);
-            font = @ptrCast(*const PSFFont, &fontEmbed);
         } else {
             return errorTypes.FrameBufferError.InitializationError;
         }
@@ -115,6 +114,16 @@ pub const FrameBuffer = struct {
             '\n' => {
                 column = 0;
                 row += 1;
+            },
+            // Backspace
+            8 => {
+                // @TODO: Handle backspace properly
+                // When we actually handle backspace (aka have something to clear
+                // the area at a given coord), we can then have a '|' to indicate
+                // cursor position. We should also then be able to implement moving
+                // the cursor with the arrow keys.
+                if (column != 0)
+                    column -= 1;
             },
             else => {
                 if (c < font.numglyph) {

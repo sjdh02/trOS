@@ -46,7 +46,30 @@ you can combine the last two:
 zig build qemu -Dpty -Dgdb
 ```
 
-and thats about it.
+if you want a very small binary:
+
+```
+zig build -Drelease-fast
+# or
+zig build -Drelease-small
+```
+
+both of these produce a binary that is about ~5kb.
+
+if you want release optimizations while still having safety checks:
+
+```
+zig build -Drelease-safe
+```
+
+and thats about all the build options. note that you can combine all `-D` options
+with the `qemu` directive, e.g.:
+
+```
+zig build qemu -Drelease-small
+```
+
+will build a `release-small` binary and then run it with qemu.
 
 # credit
 
