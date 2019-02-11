@@ -73,4 +73,4 @@ will build a `release-small` binary and then run it with qemu.
 
 # credit
 
-thanks to [andrew kelly](https://github.com/andrewrok/clashos/) for the build file.
+thanks to [andrew kelly](https://github.com/andrewrk/clashos/) for the build file.
