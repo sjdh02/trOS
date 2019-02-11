@@ -8,7 +8,7 @@ extern crate trOS_io;
 
 use trOS_io::uart::UART0;
 
-use trOS_io::framebuffer;
+use trOS_io::framebuffer::LFB;
 use trOS_mbox::mbox;
 
 #[panic_handler]
@@ -35,7 +35,6 @@ global_asm!(include_str!("boot.S"));
 
 // @TODO: Spend some time refactoring to remove unsafe code.
 
-// @TODO: Initialize UART1 before UART0 for debugging.
 
 #[no_mangle]
 extern "C" fn kmain() -> ! {
@@ -44,11 +43,11 @@ extern "C" fn kmain() -> ! {
     serial_put!("tOS V0.1\n");
     serial_put!("READY:> ");
 
-    let mut lfb = framebuffer::FrameBufferStream::new(1920, 1080);
-    lfb.init(&mut postman).unwrap();
-    lfb.write("Nice.");
+    LFB.lock().init(&mut postman).unwrap();
+
     loop {
         let x = UART0.lock().get();
         serial_put!("{}", x);
+        framebuffer_put!("{}", x);
     }
 }

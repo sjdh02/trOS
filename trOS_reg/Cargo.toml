@@ -1,0 +1,7 @@
+[package]
+name = "trOS_reg"
+version = "0.1.0"
+authors = ["sjdh02 <sjdh@sjdh.us>"]
+edition = "2018"
+
+[dependencies]

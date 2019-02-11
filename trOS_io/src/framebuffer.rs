@@ -1,5 +1,7 @@
 use trOS_mbox::mbox::*;
 use trOS_phys::mmio::write;
+use spin::Mutex;
+use lazy_static::lazy_static;
 
 // @TODO: Remove this when SD card support lands.
 static FONT: &'static [u8; 2080] = include_bytes!("font.psf");
@@ -21,45 +23,32 @@ struct PSFFont {
 /// Represent the linear framebuffer of the RPI3. Note that this struct holds a
 /// raw pointer, and unsafe code acts on this to write to the framebuffer. See
 /// the `impl`'s of this function for more details.
-pub struct FrameBufferStream {
+pub struct FrameBuffer {
     width: u32,
     height: u32,
     pitch: u32,
     x: u32,
     y: u32,
-    ptr: *mut u8,
+    ptr: u32,
 }
 
-impl Default for FrameBufferStream {
+impl Default for FrameBuffer {
     fn default() -> Self {
-        FrameBufferStream{
+        FrameBuffer{
             width: 1920,
             height: 1080,
             pitch: 0,
             x: 0,
             y: 0,
-            ptr: 0xDEAD_BEEF as *mut u8,
+            ptr: 0xDEAD_BEEF as u32,
         }
     }
 }
 
-impl FrameBufferStream {
-    /// Instantiate a new `FrameBufferStream` with a given width and height.
-    /// The `ptr` and `pitch` fields are instantiated with filler values.
-    pub fn new(width: u32, height: u32) -> Self {
-        FrameBufferStream{
-            width: width,
-            height: height,
-            pitch: 0,
-            x: 0,
-            y: 0,
-            ptr: 0xDEAD_BEEF as *mut u8,
-        }
-    }
-
+impl FrameBuffer {
     /// Initialize the linear framebuffer. Performs a mailbox call to set the
     /// resolution, then sets the values for `pitch` and `ptr` of the
-    /// `FrameBufferStream` it was called on.
+    /// `FrameBuffer` it was called on.
     pub fn init(&mut self, mbox: &mut MailBox) -> Result<(), &str>{
         // Clear the mailbox and setup the new call
         mbox.clear();
@@ -109,7 +98,7 @@ impl FrameBufferStream {
         if mbox.call(MBOX_CH_PROP) && mbox.mbox[20] == 32 && mbox.mbox[28] != 0 {
             mbox.mbox[28] &= 0x3FFF_FFFF;
             self.pitch = mbox.mbox[33];
-            self.ptr = mbox.mbox[28] as *mut u8;
+            self.ptr = mbox.mbox[28];
             Ok(())
         } else {
             Err("Failed to initialize framebuffer!")
@@ -122,7 +111,7 @@ impl FrameBufferStream {
             return Err("WARNING: failed to write to offset, maximum offset is 8298239!");
         }
         unsafe {
-            write((self.ptr.offset(offset as isize)) as *mut u32, d.into());
+            write(((self.ptr as *mut u8).offset(offset as isize)) as *mut u32, d.into());
         }
         Ok(())
     }
@@ -140,11 +129,10 @@ impl FrameBufferStream {
         }
     }
 
-    pub fn write(&mut self, data: &str) {
+    fn write(&mut self, data: &str) {
         let font = unsafe { core::ptr::read(FONT.as_ptr() as *const PSFFont) };
         for c in data.chars() {
             let bytes_per_line = (font.width + 7) / 8;
-            //let mut ptr = unsafe {(FONT.as_ptr()).offset(font.headersize as isize).offset(('A' as u32 * font.bytes_per_glyph) as isize)};
             let mut ptr = unsafe {(FONT.as_ptr()).offset(font.headersize as isize).offset((c as u32 * font.bytes_per_glyph) as isize)};
             let mut offset = (self.y * font.height * self.pitch) + (self.x * (font.width + 1) * 4);
             if c == '\r' {
@@ -152,6 +140,8 @@ impl FrameBufferStream {
             } else if c == '\n' {
                 self.x = 0;
                 self.y += 1;
+            } else if (c as u8) == 8 {
+                self.x -= 1;
             } else {
                 for _ in 0..font.height {
                     let mut line = offset;
@@ -171,4 +161,26 @@ impl FrameBufferStream {
             }
         }
     }
+}
+
+impl core::fmt::Write for FrameBuffer {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        self.write(s);
+        Ok(())
+    }
+}
+
+lazy_static! {
+    pub static ref LFB: Mutex<FrameBuffer> = Mutex::new(FrameBuffer::default());
+}
+
+#[doc(hidden)]
+pub fn _fbprint(args: core::fmt::Arguments) {
+    use core::fmt::Write;
+    LFB.lock().write_fmt(args).unwrap();
+}
+
+#[macro_export]
+macro_rules! framebuffer_put {
+    ($($arg:tt)*) => ($crate::framebuffer::_fbprint(format_args!($($arg)*)));
 }
