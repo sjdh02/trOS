@@ -1,3 +1,0 @@
-#!/bin/sh
-cd trOS_core
-cargo xbuild --target aarch64-unknown-none

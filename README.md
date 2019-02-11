@@ -1,41 +1,76 @@
 # trOS
-trOS is a small, rust and assembly, aarch64 rpi3 bare metal OS thingy.
+trOS is a small, [zig](https://ziglang.org) and assembly, aarch64 RPI3 bare metal OS thingy.
 
-Here is some stuff that works:
+some stuff that works:
 * mailbox calls
 * uart0
-* framebuffer (initializing/clearing/printing characters)
+* framebuffer (initializing/clearing/printing characters and strings)
 * gpio
 * mmio
 
-Here is some stuff that doesn't quite work:
+stuff that is being worked on:
 * USB
 * networking
-* reading from the sd card
-* anything not mentioned in the "stuff that works" section
+* SD card support (priority!)
+* anything else not mentioned above
 
-# Building
-You'll need `cargo` and `cargo-xbuild` for the build. once you have those,
-run:
+# building
+all you need to build is [zig](https://ziglang.org) itself. grab it and run:
+
 ```
-sh build
+zig build
+```
+
+the output file will be in `zig-cache`. alternatively, you can run the following to
+launch qemu (will auto-detect windows or unix):
+
+```
+zig build qemu
+```
+
+you can have qemu redirect to a pty as well:
+
+```
+zig build qemu -Dpty
+```
+
+you can start a gdb remote server:
+
+```
+zig build qemu -Dgdb
+```
+
+you can combine the last two:
+
+```
+zig build qemu -Dpty -Dgdb
+```
+
+if you want a very small binary:
+
+```
+zig build -Drelease-fast
 # or
-./build
+zig build -Drelease-small
 ```
-the binary will be in `trOS_core/target/aarch64-unknown-none/debug/`.
 
-# Running
-You can run this with qemu or use objcopy to throw it in an img file for booting
-on real hardware. Note that it hasn't been tested on real hardware, but should work
-fine. Running with qemu is easy:
+both of these produce a binary that is about ~5kb.
+
+if you want release optimizations while still having safety checks:
+
 ```
-qemu-system-aarch64 -kernel trOS_core/target/aarch64-unknown-none/debug/trOS -m 256 -M raspi3 -serial stdio
+zig build -Drelease-safe
 ```
-You can redirect `-serial` wherever you prefer. 
 
-Alternatively, to both build and run with qemu, make the `run` file executable and run it.
-It invokes the `xbuild` command and then fires up qemu.
+and thats about all the build options. note that you can combine all `-D` options
+with the `qemu` directive, e.g.:
 
-# Disclaimer
-A lot of this code is far from safe and likely not too idiomatic. Don't expect anything amazing here,
-at least not for now. Just know that I do intend to improve it over time.
+```
+zig build qemu -Drelease-small
+```
+
+will build a `release-small` binary and then run it with qemu.
+
+# credit
+
+thanks to [andrew kelly](https://github.com/andrewrk/clashos/) for the build file.

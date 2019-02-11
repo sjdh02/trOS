@@ -1,7 +1,0 @@
-[package]
-name = "trOS_reg"
-version = "0.1.0"
-authors = ["Sam Hood <sjdh@sjdh.us>"]
-edition = "2018"
-
-[dependencies]
