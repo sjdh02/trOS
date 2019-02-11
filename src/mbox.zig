@@ -1,14 +1,18 @@
-const mmio = @import("index.zig").mmio;
-const uart = @import("index.zig").uart;
 const std = @import("std");
+const index = @import("index.zig");
+
+const mmio = index.mmio;
+const uart = index.uart;
+
+const Register = index.regs.Register;
 
 pub const VCORE_MBOX: u32 = mmio.MMIO_BASE + 0x0000B880;
-pub const MBOX_READ: u32 = VCORE_MBOX + 0x0;
+pub const MBOX_READ: Register = Register { .ReadOnly = VCORE_MBOX + 0x0 };
 pub const MBOX_POLL: u32 = VCORE_MBOX + 0x10;
 pub const MBOX_SENDER: u32 = VCORE_MBOX + 0x14;
-pub const MBOX_STATUS: u32 = VCORE_MBOX + 0x18;
+pub const MBOX_STATUS: Register = Register { .ReadOnly = VCORE_MBOX + 0x18 };
 pub const MBOX_CONFIG: u32 = VCORE_MBOX + 0x1C;
-pub const MBOX_WRITE: u32 = VCORE_MBOX + 0x20;
+pub const MBOX_WRITE: Register = Register { .WriteOnly = VCORE_MBOX + 0x20 };
 pub const MBOX_RESPONSE: u32 = 0x80000000;
 pub const MBOX_FULL: u32 = 0x80000000;
 pub const MBOX_EMPTY: u32 = 0x40000000;

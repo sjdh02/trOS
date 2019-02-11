@@ -1,7 +1,11 @@
-const mmio = @import("mmio.zig");
+const index = @import("../index.zig");
+
+const mmio = index.mmio;
+
+const Register = index.regs.Register;
 
 pub const GPFSEL0: u32 = mmio.MMIO_BASE + 0x00200000;
-pub const GPFSEL1: u32 = mmio.MMIO_BASE + 0x00200004;
+pub const GPFSEL1: Register = Register { .ReadWrite = mmio.MMIO_BASE + 0x00200004 };
 pub const GPFSEL2: u32 = mmio.MMIO_BASE + 0x00200008;
 pub const GPFSEL3: u32 = mmio.MMIO_BASE + 0x0020000C;
 pub const GPFSEL4: u32 = mmio.MMIO_BASE + 0x00200010;
@@ -15,6 +19,6 @@ pub const GPEDS0: u32 = mmio.MMIO_BASE + 0x00200040;
 pub const GPEDS1: u32 = mmio.MMIO_BASE + 0x00200044;
 pub const GPHEN0: u32 = mmio.MMIO_BASE + 0x00200064;
 pub const GPHEN1: u32 = mmio.MMIO_BASE + 0x00200068;
-pub const GPPUD: u32 = mmio.MMIO_BASE + 0x00200094;
-pub const GPPUDCLK0: u32 = mmio.MMIO_BASE + 0x00200098;
+pub const GPPUD: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x00200094 };
+pub const GPPUDCLK0: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x00200098 };
 pub const GPPUDCLK1: u32 = mmio.MMIO_BASE + 0x0020009C;

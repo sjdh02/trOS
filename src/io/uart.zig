@@ -6,6 +6,8 @@ const gpio = index.gpio;
 const mbox = index.mbox;
 const cmd = index.cmd;
 
+const Register = index.regs.Register;
+
 /// Track whether we've initialized the UART yet
 pub var initState: bool = false;
 
@@ -14,12 +16,12 @@ const NoError = error{};
 
 /// Struct to handle UART reads and writes.
 const UartStream = struct {
-    UART_MU_IO: u32,
-    UART_MU_LSR: u32,
+    UART_MU_IO: Register,
+    UART_MU_LSR: Register,
     cmd: cmd.CommandParser,
 
     /// Initialize a `UartStream` with a given IO and LSR address.
-    pub fn init(io: u32, lsr: u32) UartStream {
+    pub fn init(io: Register, lsr: Register) UartStream {
         return UartStream{
             .UART_MU_IO = io,
             .UART_MU_LSR = lsr,
@@ -39,7 +41,7 @@ const UartStream = struct {
             '\r' => {
                 mmio.write(self.UART_MU_IO, '\n');
                 mmio.write(self.UART_MU_IO, '\r');
-                self.cmd.parseCommand() catch @panic("Failed to parse argument!\n");
+                //self.cmd.parseCommand() catch @panic("Failed to parse argument!\n");
                 self.writeBytes("READY:> ");
             },
             else => {
@@ -70,14 +72,14 @@ const UartStream = struct {
 // Refer to the Broadcom manual for info on how this works.
 
 // Constants for UART0 addresses.
-const UART_DR: u32 = mmio.MMIO_BASE + 0x00201000;
-const UART_FR: u32 = mmio.MMIO_BASE + 0x00201018;
-const UART_IBRD: u32 = mmio.MMIO_BASE + 0x00201024;
-const UART_FBRD: u32 = mmio.MMIO_BASE + 0x00201028;
-const UART_LCRH: u32 = mmio.MMIO_BASE + 0x0020102C;
-const UART_CR: u32 = mmio.MMIO_BASE + 0x00201030;
-const UART_IMSC: u32 = mmio.MMIO_BASE + 0x00201038;
-const UART_ICR: u32 = mmio.MMIO_BASE + 0x00201044;
+const UART_DR: Register = Register { .ReadWrite = mmio.MMIO_BASE + 0x00201000 };
+const UART_FR: Register = Register { .ReadOnly = mmio.MMIO_BASE + 0x00201018 };
+const UART_IBRD: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201024 };
+const UART_FBRD: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201028 };
+const UART_LCRH: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x0020102C };
+const UART_CR: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201030 };
+const UART_IMSC: Register = Register { .ReadOnly = mmio.MMIO_BASE + 0x00201038 };
+const UART_ICR: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201044 };
 
 pub fn init() void {
     // Temporarily disable UART0 for config

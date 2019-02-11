@@ -8,6 +8,8 @@ const mbox = index.mbox;
 const uart = index.uart;
 const errorTypes = index.errorTypes;
 
+const Register = index.regs.Register;
+
 /// Embedded PSF font file
 const fontEmbed = @embedFile("font.psf");
 
@@ -93,9 +95,9 @@ const FrameBufferStream = struct {
                     glyph += bytesPerLine;
                     offset += self.pitch;
                 }
+                self.x += 1;
             },
         }
-        self.x += 1;
     }
 
     pub fn writeBytes(self: *Self, data: []const u8) void {
