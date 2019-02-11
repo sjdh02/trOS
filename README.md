@@ -10,11 +10,23 @@ Here is some stuff that works:
 
 Here is some stuff that doesn't quite work:
 * USB
-*networking
+* networking
 * reading from the sd card
 * anything not mentioned in the "stuff that works" section
 
 # Building
+first, in `trOS_core`, create a `.cargo/config`:
+
+```
+[target.aarch64-unknown-none]
+rustflags = [
+  "-C", "link-arg=-Tlinker.ld",
+  "-C", "target-feature=-fp-armv8",
+  "-C", "target-cpu=cortex-a53",
+  "-C", "inline-threshold=275",
+]
+```
+
 You'll need `cargo` and `cargo-xbuild` for the build. once you have those,
 run:
 ```
