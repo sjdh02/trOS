@@ -7,28 +7,14 @@ pub const Register = union(enum) {
     ReadWrite: u32,
 };
 
-fn write(reg: Register) errorTypes.RegisterError!void {
-    switch (reg) {
-        Register.ReadOnly => {
-            return errorTypes.RegisterError.BadType;
-        },
-        else => {
-            return;
-        }
-    }
-}
-
 test "Register Union" {
     const std = @import("std");
-    const x = Register{ .ReadOnly = 1234 };
-    const y = Register{ .WriteOnly = 1234 };
-    const z = Register{ .ReadWrite = 1234 };
-    std.debug.assert(@typeOf(x) == Register);
-    std.debug.assert(@typeOf(y) == Register);
-    std.debug.assert(@typeOf(z) == Register);
+    const write = index.mmio.write;
+    const read = index.mmio.read;
+    const x = Register{ .WriteOnly = 0xDEADBEEF };
+    const y = Register{ .ReadOnly = 0xDEADBEEF };
+    const z = Register{ .ReadWrite = 0xDEADBEEF };
 
-    std.testing.expectError(errorTypes.RegisterError.BadType, (write(x)));
-
-    try write(y);
-    try write(z);
+    std.debug.assert(null == (write(y, 0xCAFEBABE)));
+    std.debug.assert(null == (read(x)));
 }

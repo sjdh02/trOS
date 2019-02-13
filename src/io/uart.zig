@@ -29,19 +29,19 @@ pub const UartStream = struct {
     /// Write a `u8` to the location pointed to by the `UART_MU_IO` field
     /// of the `UartStream`.
     pub fn put(self: *const UartStream, c: u8) void {
-        while ((mmio.readSafe(self.UART_MU_LSR) & 0x20) != 0) {}
+        while ((mmio.read(self.UART_MU_LSR).? & 0x20) != 0) {}
         switch (c) {
             '\n' => {
-                mmio.writeSafe(self.UART_MU_IO, '\n');
-                mmio.writeSafe(self.UART_MU_IO, '\r');
+                mmio.write(self.UART_MU_IO, '\n').?;
+                mmio.write(self.UART_MU_IO, '\r').?;
             },
             '\r' => {
-                mmio.writeSafe(self.UART_MU_IO, '\n');
-                mmio.writeSafe(self.UART_MU_IO, '\r');
+                mmio.write(self.UART_MU_IO, '\n').?;
+                mmio.write(self.UART_MU_IO, '\r').?;
                 self.writeBytes("READY:> ");
             },
             else => {
-                mmio.writeSafe(self.UART_MU_IO, c);
+                mmio.write(self.UART_MU_IO, c).?;
             }
         }
     }
@@ -49,8 +49,8 @@ pub const UartStream = struct {
     /// Recieve a `u8` from the location pointed to be the `UART_MU_IO` field
     /// of the `UartStream`.
     pub fn get(self: *const UartStream) u8 {
-        while ((mmio.readSafe(self.UART_MU_LSR) & 0x10) != 0) {}
-        return @truncate(u8, mmio.readSafe(self.UART_MU_IO));
+        while ((mmio.read(self.UART_MU_LSR).? & 0x10) != 0) {}
+        return @truncate(u8, mmio.read(self.UART_MU_IO).?);
     }
 
     /// Write a `[]const u8` to the location pointed to by the `UART_MU_IO`
@@ -78,7 +78,7 @@ const UART_ICR: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201044 }
 
 pub fn init() void {
     // Temporarily disable UART0 for config
-    mmio.writeSafe(UART_CR, 0);
+    mmio.write(UART_CR, 0).?;
     // Setup clock mailbox call
     mbox.mbox[0] = 9*4;
     mbox.mbox[1] = mbox.MBOX_REQUEST;
@@ -89,32 +89,32 @@ pub fn init() void {
     mbox.mbox[6] = 4000000;
     mbox.mbox[7] = 0;
     mbox.mbox[8] = mbox.MBOX_TAG_LAST;
-    _ = mbox.mboxCall(mbox.MBOX_CH_PROP);
+    mbox.mboxCall(mbox.MBOX_CH_PROP).?;
 
-    var r: u32 = mmio.readSafe(gpio.GPFSEL1);
+    var r: u32 = mmio.read(gpio.GPFSEL1).?;
     // Clean gpio pins 14 and 15
     r &=~u32(((7 << 12) | (7 << 15)));
     // Set alt0 for pins 14 and 15. alt0 functionality on these pins is Tx/Rx
     // respectively for UART0. Note that alt5 on these pins is Tx/Rx for UART1.
     r |= (4 << 12) | (4 << 15);
-    mmio.writeSafe(gpio.GPFSEL1, r);
+    mmio.write(gpio.GPFSEL1, r).?;
     // Write zero to GPPUD to set the pull up/down state to 'neither'
-    mmio.writeSafe(gpio.GPPUD, 0);
+    mmio.write(gpio.GPPUD, 0).?;
     mmio.wait(150);
     // Mark the pins that are going to be modified by writing them into GPPUDCLK0
     // This makes sure that only pins 14 and 15 are set to the 'neither' state.
-    mmio.writeSafe(gpio.GPPUDCLK0, (1 << 14) | (1 << 15));
+    mmio.write(gpio.GPPUDCLK0, (1 << 14) | (1 << 15)).?;
     mmio.wait(150);
     // Remove above clock for any future GPPUDCLK0 operations so they don't get
     // the wrong pins to modify
-    mmio.writeSafe(gpio.GPPUDCLK0, 0);
+    mmio.write(gpio.GPPUDCLK0, 0).?;
     // Clear interrupts
-    mmio.writeSafe(UART_ICR, 0x7FF);
+    mmio.write(UART_ICR, 0x7FF).?;
     // 115200 baud
-    mmio.writeSafe(UART_IBRD, 2);
-    mmio.writeSafe(UART_FBRD, 0xB);
-    mmio.writeSafe(UART_LCRH, 0b11 << 15);
-    mmio.writeSafe(UART_CR, 0x301);
+    mmio.write(UART_IBRD, 2).?;
+    mmio.write(UART_FBRD, 0xB).?;
+    mmio.write(UART_LCRH, 0b11 << 15).?;
+    mmio.write(UART_CR, 0x301).?;
     initState = true;
 }
 

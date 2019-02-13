@@ -1,4 +1,3 @@
-const builtin = @import("builtin");
 const std = @import("std");
 const index = @import("../index.zig");
 
@@ -6,7 +5,6 @@ const gpio = index.gpio;
 const mmio = index.mmio;
 const mbox = index.mbox;
 const uart = index.uart;
-const errorTypes = index.errorTypes;
 
 const Register = index.regs.Register;
 
@@ -30,6 +28,8 @@ const PSFFont = packed struct {
 /// Note that it also handles parsing PSF fonts and doing glyph
 /// lookups when performing a write.
 pub const FrameBuffer = struct {
+    const Self = @This();
+
     var width: u32 = undefined;
     var height: u32 = undefined;
     var pitch: u32 = undefined;
@@ -44,10 +44,8 @@ pub const FrameBuffer = struct {
 
     var initState = false;
 
-    // Simple alias for FrameBufferStream
-    const Self = @This();
 
-    fn init() !void {
+    fn init() ?void {
         mbox.mbox[0] = 35*4;
         mbox.mbox[1] = mbox.MBOX_REQUEST;
         mbox.mbox[2] = 0x48003;  //set phy wh
@@ -91,21 +89,21 @@ pub const FrameBuffer = struct {
 
         mbox.mbox[34] = mbox.MBOX_TAG_LAST;
 
-        if (mbox.mboxCall(mbox.MBOX_CH_PROP) and mbox.mbox[20] == 32 and mbox.mbox[28] != 0) {
+        if ((mbox.mboxCall(mbox.MBOX_CH_PROP) != null) and mbox.mbox[20] == 32 and mbox.mbox[28] != 0) {
             mbox.mbox[28] &= 0x3FFFFFFF;
             width = mbox.mbox[5];
             height = mbox.mbox[6];
             pitch = mbox.mbox[33];
             ptr = @intToPtr([*]volatile u8, mbox.mbox[28]);
         } else {
-            return errorTypes.FrameBufferError.InitializationError;
+            return null;
         }
     }
 
     fn put(c: u8) void {
         const bytesPerLine = (font.width + 7) / 8;
         var offset = (row * font.height * pitch) + (column * (font.width + 1) * 4);
-        var glyph = @ptrToInt(&fontEmbed);
+        var idx = usize(0);
         switch(c) {
             '\r' => {
                 writeBytes("\n");
@@ -117,19 +115,27 @@ pub const FrameBuffer = struct {
             },
             // Backspace
             8 => {
-                // @TODO: Handle backspace properly
-                // When we actually handle backspace (aka have something to clear
-                // the area at a given coord), we can then have a '|' to indicate
-                // cursor position. We should also then be able to implement moving
-                // the cursor with the arrow keys.
-                if (column != 0)
+                if (column > 8)
                     column -= 1;
+                offset = (row * font.height * pitch) + (column * (font.width + 1) * 4);
+                var y: usize = 0;
+                while (y < font.height) : (y += 1) {
+                    var line = offset;
+                    var x: usize = 0;
+                    while (x < font.width) : (x += 1) {
+                        ptr[line] = 0;
+                        ptr[line + 1] = 0;
+                        ptr[line + 2] = 0;
+                        line += 4;
+                    }
+                    offset += pitch;
+                }
             },
             else => {
                 if (c < font.numglyph) {
-                    glyph += (font.headersize + (c * font.bytesPerGlyph));
+                    idx += (font.headersize + (c * font.bytesPerGlyph));
                 } else {
-                    glyph += (font.headersize + (0 * font.bytesPerGlyph));
+                    idx += (font.headersize + (0 * font.bytesPerGlyph));
                 }
                 var y: usize = 0;
                 while (y < font.height) : (y += 1) {
@@ -138,7 +144,7 @@ pub const FrameBuffer = struct {
                     var x: usize = 0;
                     while (x < font.width) : (x += 1) {
                         var color: u8 = undefined;
-                        if ((@intToPtr(*const u8, glyph).* & mask) == 0) {
+                        if ((fontEmbed[idx]) & mask == 0) {
                             color = 0;
                         } else {
                             color = 255;
@@ -149,7 +155,7 @@ pub const FrameBuffer = struct {
                         mask >>= 1;
                         line += 4;
                     }
-                    glyph += bytesPerLine;
+                    idx += bytesPerLine;
                     offset += pitch;
                 }
                 column += 1;
@@ -159,7 +165,7 @@ pub const FrameBuffer = struct {
 
     pub fn writeBytes(data: []const u8) void {
         if (!initState)
-            init() catch @panic("Failed to initialize framebuffer!\n");
+            init().?;
         for (data) |c| {
             put(c);
         }

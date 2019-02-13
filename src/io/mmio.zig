@@ -1,29 +1,25 @@
 const AtomicOrder = @import("builtin").AtomicOrder;
 const index = @import("../index.zig");
 const regs = index.regs;
-const errorTypes = index.errorTypes;
 
 const Register = regs.Register;
 
 /// Base address for the MMIO operations.
 pub const MMIO_BASE: u32 = 0x3F000000;
 
-/// Write data to a given MMIO register, but by default assume that the write
-/// is going to be safe and will hit unreachable code if a bad register type
-/// is caught by `write`.
-pub fn writeSafe(reg: Register, data: u32) void {
-    write(reg, data) catch unreachable;
-}
+// @TODO @PENDING-FIX: We should mark the register arguments below as compile time
+// and then use @compileError in the bad bracnhes to catch bad register types at
+// compile time. Currently, marking them as comptime causes the compiler to emit
+// the following error: "TODO const expr analyze union field value for equality".
+// It would allow us to elimiate the ?void return type as well, since the only
+// error would be caught at compile time.
 
-/// Write data to a given MMIO register, returning an errorTypes.Register.BadType
-/// if the register had an incorrect type. Only use this function if, for whatever
-/// reason, you want custom error handling of a bad register type being passed.
-pub fn write(reg: Register, data: u32) !void {
+/// Write data to a given MMIO register, returning null
+/// if the register had an incorrect type.
+pub fn write(reg: Register, data: u32) ?void {
     @fence(AtomicOrder.SeqCst);
     switch (reg) {
-        Register.ReadOnly => {
-            return errorTypes.RegisterError.BadType;
-        },
+        Register.ReadOnly => return null,
         Register.WriteOnly => {
             @intToPtr(*volatile u32, reg.WriteOnly).* = data;
         },
@@ -33,22 +29,12 @@ pub fn write(reg: Register, data: u32) !void {
     }
 }
 
-/// Read data to a given MMIO register, but by default assume that the read
-/// is going to be safe and will hit unreachable code if a bad register type
-/// is caught by `read`.
-pub fn readSafe(reg: Register) u32 {
-    return read(reg) catch unreachable;
-}
-
-/// Read data to a given MMIO register, returning an errorTypes.Register.BadType
-/// if the register had an incorrect type. Only use this function if, for whatever
-/// reason, you want custom error handling of a bad register type being passed.
-pub fn read(reg: Register) !u32 {
+/// Read data to a given MMIO register, returning null.
+/// if the register had an incorrect type.
+pub fn read(reg: Register) ?u32 {
     @fence(AtomicOrder.SeqCst);
     switch (reg) {
-        Register.WriteOnly => {
-            return errorTypes.RegisterError.BadType;
-        },
+        Register.WriteOnly => return null,
         Register.ReadOnly => {
             return @intToPtr(*volatile u32, reg.ReadOnly).*;
         },
@@ -65,14 +51,4 @@ pub fn wait(count: usize) void {
         // Marked as volatile so the optimizer doesn't optimize it away
         asm volatile ("mov w0, w0");
     }
-}
-
-test "MMIO read/write" {
-    const std = @import("std");
-    const x = Register{ .WriteOnly = 0xDEADBEEF };
-    const y = Register{ .ReadOnly = 0xDEADBEEF };
-    const z = Register{ .ReadWrite = 0xDEADBEEF };
-
-    std.testing.expectError(errorTypes.RegisterError.BadType, (write(y, 0xCAFEBABE)));
-    std.testing.expectError(errorTypes.RegisterError.BadType, (read(x)));
 }

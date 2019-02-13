@@ -12,6 +12,7 @@ const framebuffer = @import("index.zig").framebuffer;
 // as well.
 
 // @TODO: Re-do docs.
+
 // @TODO: Refactor UART module.
 
 pub fn panic(msg: []const u8, error_stack_trace: ?*builtin.StackTrace) noreturn {

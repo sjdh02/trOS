@@ -1,4 +1,3 @@
-const std = @import("std");
 const index = @import("index.zig");
 
 const mmio = index.mmio;
@@ -40,35 +39,17 @@ pub var mbox: [36]u32 align(16) = []u32{0}**36;
 /// Make a call to the mailbox to query information. Note that when running on
 /// emulated hardware this may have different results, e.g. a serial number
 /// query will always return 0.
-pub fn mboxCall(d: u8) bool {
+pub fn mboxCall(d: u8) ?void {
     const r: u32 = @intCast(u32, (@ptrToInt(&mbox) & ~u32(0xF))) | @intCast(u32, (@intCast(u32, d) & 0xF));
-    while(mmio.readSafe(MBOX_STATUS) & MBOX_FULL != 0) {
+    while(mmio.read(MBOX_STATUS).? & MBOX_FULL != 0) {
         mmio.wait(1);
     }
-    mmio.writeSafe(MBOX_WRITE, r);
+    mmio.write(MBOX_WRITE, r).?;
     while (true) {
-        while (mmio.readSafe(MBOX_STATUS) & MBOX_EMPTY != 0) {
+        while (mmio.read(MBOX_STATUS).? & MBOX_EMPTY != 0) {
             mmio.wait(1);
         }
-        if (mmio.readSafe(MBOX_READ) == r)
-            return mbox[1] == MBOX_RESPONSE;
-    }
-}
-
-pub fn mboxGetSerial() void {
-    // Setup the query
-    mbox[0] = 8*4;
-    mbox[1] = MBOX_REQUEST;
-    mbox[2] = MBOX_TAG_GETSERIAL;
-    mbox[3] = 8;
-    mbox[4] = 8;
-    mbox[5] = 0;
-    mbox[6] = 0;
-    mbox[7] = MBOX_TAG_LAST;
-    // Make the call
-    if (mboxCall(MBOX_CH_PROP)) {
-        if (!uart.initState)
-            uart.init();
-        uart.write("{}{}\n", mbox[6], mbox[5]);
+        if (mmio.read(MBOX_READ).? == r)
+            if (mbox[1] == MBOX_RESPONSE) return else return null;
     }
 }
