@@ -6,12 +6,10 @@ const gpio = index.gpio;
 const mbox = index.mbox;
 
 const Register = index.regs.Register;
+const NoError = index.errorTypes.NoError;
 
 /// Track whether we've initialized the UART yet
 pub var initState: bool = false;
-
-/// Alias to represent an empty error.
-const NoError = error{};
 
 /// Struct to handle UART reads and writes.
 pub const UartStream = struct {
@@ -64,7 +62,7 @@ pub const UartStream = struct {
     }
 };
 
-// Refer to the Broadcom manual for info on how this works.
+// See page 90 of the BCM2835 manual for information about most of these.
 
 // Constants for UART0 addresses.
 const UART_DR: Register = Register { .ReadWrite = mmio.MMIO_BASE + 0x00201000 };

@@ -7,10 +7,9 @@ const mbox = index.mbox;
 const uart = index.uart;
 
 const Register = index.regs.Register;
+const NoError = index.errorTypes.NoError;
 
 const fontEmbed = @embedFile("font.psf");
-
-const NoError = error{};
 
 /// Respresent a PSF font.
 const PSFFont = packed struct {
