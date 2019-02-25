@@ -1,0 +1,40 @@
+version(1);
+
+project_name = "trOS";
+
+patterns = {
+"*.zig",
+"*.4coder",
+};
+
+blacklist_patterns = {
+".*",
+};
+
+load_paths = {
+ { { {".", .relative = true, .recursive = true, } }, .os = "win" },
+ { { {".", .relative = true, .recursive = true, } }, .os = "linux" },
+ { { {".", .relative = true, .recursive = true, } }, .os = "mac" },
+};
+
+command_list = {
+ { .name = "build",
+   .out = "*compilation*", .footer_panel = true, .save_dirty_files = true, .cursor_at_end = false,
+   .cmd = {
+          { "zig build", .os = "win" },
+          { "build.sh", .os = "linux" },
+          { "build.sh", .os = "mac" }, 
+   },
+ },
+ { .name = "run",
+   .out = "*run*", .footer_panel = true, .save_dirty_files = false, .cursor_at_end = true,
+   .cmd = {
+          { "zig build qemu", .os = "win" },
+          { "zig build qemu", .os = "linux"},
+          { "zig build qemu", .os = "mac" },
+   },
+ },
+};
+
+fkey_command[1] = "build";
+fkey_command[2] = "run";

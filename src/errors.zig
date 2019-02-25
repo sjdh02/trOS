@@ -3,7 +3,9 @@ pub const SDError = error {
     CommandError,
     Timeout,
     GeneralError,
-    Ok,
+    ReadError,
+    BufferError,
+    Ok, // Imply that nothing "failed", but something probably didn't happen that we wanted
 };
 
 pub const NoError = error{};

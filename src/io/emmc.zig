@@ -7,8 +7,7 @@ const uart = index.uart;
 const SDError = index.errorTypes.SDError;
 const Register = index.regs.Register;
 
-
-// See page 65 of the BCM2835 manual for information about most of these.
+// NOTE(sam): this is pretty much a direct port of https://github.com/bztsrc/raspi3-tutorial/0B_readsector.
 
 const EMMC_ARG1: Register = Register { .ReadOnly = mmio.MMIO_BASE + 0x00300008 };
 const EMMC_ARG2: Register = Register { .ReadOnly = mmio.MMIO_BASE + 0x00300000 };
@@ -35,8 +34,6 @@ const CMD_ERRORS_MASK: u32 = 0xFFF9C004;
 const CMD_RCA_MASK: u32 = 0xFFFF0000;
 
 // Commands
-// See documentation in the EMMC section of the Broadcom docs, under the 'CMDTM'
-// register.
 const CMD_GO_IDLE: u32 = 0x00000000;
 const CMD_ALL_SEND_CID: u32 = 0x02010000;
 const CMD_SEND_REL_ADDR: u32 = 0x03020000;
@@ -90,19 +87,23 @@ const SCR_SD_BUS_WIDTH_4: u32 = 0x00000400;
 const SCR_SUPP_SET_BLKCNT: u32 = 0x02000000;
 const SCR_SUPP_CSS: u32 = 0x00000001;
 
-// @TODO: init function and block read.
 pub const SDHC = struct {
+    var cmdCode = usize(0);
+    var sdRca = usize(0);
+    var sdScr = [2]u8{0, 0};
+    var sdHv = usize(0);
+    
     fn getStatus(mask: u32) SDError!void {
         var cnt = isize(1000000);
         while ((mmio.read(EMMC_STATUS).? & mask) == 1 and (mmio.read(EMMC_INTERRUPT).? & INT_ERROR_MASK) != 1) : (cnt -= 1) {
             mmio.wait(1);
         }
-        if (cnt <= 0 or (mmio.read(EMMC_INTERRUPT).? & INT_ERROR_MASK) == 1) return SDError.GeneralError else return SDError.Ok;
+        if (cnt <= 0 or (mmio.read(EMMC_INTERRUPT).? & INT_ERROR_MASK) == 1) return SDError.GeneralError else return;
     }
-
+    
     fn getInterrupt(mask: u32) SDError!bool {
         var cnt = isize(1000000);
-        while ((mmio.read(EMMC_INTERRUPT).? & (mask | INT_ERROR_MASK)) != 1 ) : (cnt -= 1) {
+        while ((mmio.read(EMMC_INTERRUPT).? & (mask | INT_ERROR_MASK)) != 1) : (cnt -= 1) {
             mmio.wait(1);
         }
         const r = mmio.read(EMMC_INTERRUPT).?;
@@ -116,20 +117,29 @@ pub const SDHC = struct {
         mmio.write(EMMC_INTERRUPT, mask);
         return true;
     }
-
+    
     fn sendCommand(cmd: u32, arg: u32) SDError!u32 {
-        // Make sure the data lines are clear
+        var code = cmd;
+        // NOTE(sam): not sure whether or not this works, probably a better way
+        // to check if sendCommand() returned an error than with @typeName.
+        if (cmd & CMD_NEED_APP) {
+            if (sdRca and @typeName(sendCommand(CMD_APP_CMD | (if (sdRca == 1) CMD_RSPNS_48 else 0), sdRca)) == SDError) {
+                return SDError.GeneralError;
+            }
+            code &= ~CMD_NEED_APP;
+        }
+        // make sure the data lines are clear
         if (getStatus(SR_CMD_INHIBIT) == SDError.GeneralError) {
             uart.write("WARNING: EMMC busy!\n");
             return SDError.Timeout;
         }
-
+        
         uart.write("Sending EMMC Command: {} {}\n", cmd, arg);
         mmio.write(EMMC_INTERRUPT, mmio.read(EMMC_INTERRUPT).?).?;
         mmio.write(EMMC_ARG1, arg).?;
-        mmio.write(EMMC_CMDTM, cmd).?;
-
-        switch(cmd) {
+        mmio.write(EMMC_CMDTM, code).?;
+        
+        switch(code) {
             CMD_SEND_OP_COND => {
                 mmio.wait(1000);
                 if ((getInterrupt(INT_CMD_DONE)) == 1) return SDError.CommandError;
@@ -156,5 +166,53 @@ pub const SDHC = struct {
             },
         }
         return r & CMD_ERRORS_MASK;
+    }
+    
+    fn setClock(freq: u32) void {
+        // TODO(sam): port this
+        unreachable;
+    }
+    
+    pub fn readBlock(blockAddress: u32, buffer: []u8, blkCount: u32) SDError!void  {
+        if (buffer.len > 128) return SDError.BufferError;
+        if (blkCount == 0) return SDError.Ok;
+        if (getStatus(SR_DAT_INHIBIT) == SDError.GeneralError) {
+            uart.write("WARNING: EMMC busy!\n");
+            return SDError.Timeout;
+        }
+        if ((sdScr[0] & SCR_SUPP_CCS) == 1) {
+            if (blkCount > 1 and (sdScr[0] & SCR_SUPP_SET_BLKCNT)) {
+                // NOTE(sam): in theory this will always return a SDError.CommandError when it fails, but long term it may be worth making sure thats true.
+                sendCommand(CMD_SET_BLOCKCNT, blkCount) catch |e| return e;
+            }
+            mmio.write(EMMC_BLKSIZECNT, ((blkCount << 16) | 512));
+            sendCommand((if (num == 1) CMD_READ_SINGLE else CMD_READ_MULTI), blockAddress) catch |e| return e;
+        } else {
+            mmio.write(EMMC_BLKSIZECNT, ((1 << 16) | 512));
+        }
+        var curr = u32(0);
+        var pos = u32(0);
+        while (curr < num) : (curr += 1)  {
+            if ((sdScr[0] & SCR_SUPP_CSS) == 0) {
+                sendCommand(CMD_READ_SINGLE, ((blockAddress + curr) * 512)) catch |e| return e;
+            }
+            const r = getInterrupt(INT_READ_RDY);
+            if (@typeName(r) == SDError) {
+                uart.write("ERROR: Timeout while waiting for read-ready!\n");
+                return r;
+            }
+            var i = pos + 128;
+            while (i < pos) : (i += 1) {
+                buffer[i] = mmio.read(EMMC_DATA);
+            }
+        }
+        if (blkCount > 1 and (sdScr[0] & SCR_SUPP_SET_BLKCNT) == 0 and (sdScr[0] & SCR_SUPP_CSS) == 1) sendCommand(SMD_STOP_TRANS, 0);
+        // Return the number of bytes read
+        return pos;
+    }
+    
+    pub fn init() SDError!void {
+        // TODO(sam): Port this function
+        unreachable;
     }
 };

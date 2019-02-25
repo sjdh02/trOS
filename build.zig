@@ -39,7 +39,6 @@ pub fn build(b: *Builder) !void {
     qemu.dependOn(&run_qemu.step);
     run_qemu.step.dependOn(&exe.step);
 
-
     b.default_step.dependOn(&exe.step);
     b.installArtifact(exe);
 }

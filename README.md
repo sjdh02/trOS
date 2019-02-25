@@ -9,9 +9,9 @@ some stuff that works:
 * mmio
 
 stuff that is being worked on:
+* SD card support (read/write)
 * USB
 * networking
-* SD card support (priority!)
 * anything else not mentioned above
 
 # building
@@ -71,6 +71,15 @@ zig build qemu -Drelease-small
 
 will build a `release-small` binary and then run it with qemu.
 
+# 4coder users
+if you use the [4coder](https://4coder.net) editor, there is an included project
+file you can use to open the source as well as build/run it. the file assumes
+you have `zig` in your PATH. note the the 'run' functionality is a bit lacking
+because the pane it opens does not accept input, though this should be less of
+an inssue when USB support is available.
+
 # credit
 
 thanks to [andrew kelly](https://github.com/andrewrk/clashos/) for the build file.
+
+thanks to [bzt](https://github.com/bztsrc/raspi3-tutorial/0B_readsector) for the emmc/sd card code.
