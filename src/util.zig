@@ -16,8 +16,8 @@ pub fn hang() noreturn {
 const PM_RSTC =  Register{ .ReadOnly = mmio.MMIO_BASE + 0x0010001C};
 const PM_RSTS = Register{ .ReadWrite = mmio.MMIO_BASE + 0x00100020 };
 const PM_WDOG =  Register{ .ReadOnly = mmio.MMIO_BASE + 0x00100024 };
-const PM_WDOG_MAGIC = 0x5A000000;
-const PM_RSTC_FULLRST = 0x00000020;
+const PM_WDOG_MAGIC = u32(0x5A000000);
+const PM_RSTC_FULLRST = u32(0x00000020);
 
 /// Power the SoC down into a very low power state.
 pub fn powerOff() void {
@@ -123,7 +123,7 @@ fn getSystemTimer() c_ulong {
 }
 
 /// Wait a given number of milliseconds.
-/// NOTE: This does NOT work on QEMU, as QEMU doesn't emulate the system timer. 
+/// NOTE: This does NOT work on QEMU, as QEMU doesn't emulate the system timer.
 pub fn waitMsec(secs: u32) void {
     var n = @intCast(c_ulong, secs);
     var t = getSystemTimer();

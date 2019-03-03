@@ -6,6 +6,7 @@ pub const SDError = error {
     ReadError,
     BufferError,
     ClockError,
+    BlockCount,
 };
 
 pub const NoError = error{};

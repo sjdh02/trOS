@@ -9,7 +9,7 @@ const mbox = io.mbox;
 const Register = types.regs.Register;
 const NoError = types.errorTypes.NoError;
 
-/// Track whether we've initialized the UART yet
+/// Track whether we've initialized the UART yet.
 pub var initState: bool = false;
 
 /// Struct to handle UART reads and writes.
@@ -66,14 +66,14 @@ pub const UartStream = struct {
 // See page 90 of the BCM2835 manual for information about most of these.
 
 // Constants for UART0 addresses.
-const UART_DR: Register = Register { .ReadWrite = mmio.MMIO_BASE + 0x00201000 };
-const UART_FR: Register = Register { .ReadOnly = mmio.MMIO_BASE + 0x00201018 };
-const UART_IBRD: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201024 };
-const UART_FBRD: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201028 };
-const UART_LCRH: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x0020102C };
-const UART_CR: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201030 };
-const UART_IMSC: Register = Register { .ReadOnly = mmio.MMIO_BASE + 0x00201038 };
-const UART_ICR: Register = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201044 };
+const UART_DR = Register { .ReadWrite = mmio.MMIO_BASE + 0x00201000 };
+const UART_FR = Register { .ReadOnly = mmio.MMIO_BASE + 0x00201018 };
+const UART_IBRD = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201024 };
+const UART_FBRD = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201028 };
+const UART_LCRH = Register { .WriteOnly = mmio.MMIO_BASE + 0x0020102C };
+const UART_CR = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201030 };
+const UART_IMSC = Register { .ReadOnly = mmio.MMIO_BASE + 0x00201038 };
+const UART_ICR = Register { .WriteOnly = mmio.MMIO_BASE + 0x00201044 };
 
 pub fn init() void {
     // Temporarily disable UART0 for config

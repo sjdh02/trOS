@@ -29,21 +29,18 @@ const PSFFont = packed struct {
 /// lookups when performing a write.
 pub const FrameBuffer = struct {
     const Self = @This();
+    var initState = false;
 
-    var width: u32 = undefined;
-    var height: u32 = undefined;
-    var pitch: u32 = undefined;
+    var width = u32(0);
+    var height = u32(0);
+    var pitch = u32(0);
+    var column = u32(0);
+    var row = u32(0);
     // @NOTE: This should work well for on-the-fly font changes.
     // For example, we could start with a non-unicode font, then
     // swap to one if the need arises and continue printing seemlessly.
     var font: *const PSFFont = @ptrCast(*const PSFFont, &fontEmbed);
     var ptr: [*]volatile u8 = undefined;
-
-    var column: u32 = 0;
-    var row: u32 = 0;
-
-    var initState = false;
-
 
     fn init() ?void {
         mbox.mbox[0] = 35*4;
@@ -118,10 +115,10 @@ pub const FrameBuffer = struct {
                 if (column > 8)
                     column -= 1;
                 offset = (row * font.height * pitch) + (column * (font.width + 1) * 4);
-                var y: usize = 0;
+                var y = usize(0);
                 while (y < font.height) : (y += 1) {
                     var line = offset;
-                    var x: usize = 0;
+                    var x = usize(0);
                     while (x < font.width) : (x += 1) {
                         ptr[line] = 0;
                         ptr[line + 1] = 0;
@@ -137,13 +134,13 @@ pub const FrameBuffer = struct {
                 } else {
                     idx += (font.headersize + (0 * font.bytesPerGlyph));
                 }
-                var y: usize = 0;
+                var y = usize(0);
                 while (y < font.height) : (y += 1) {
                     var line = offset;
                     var mask = u32(1) << @truncate(u5, (font.width - 1));
-                    var x: usize = 0;
+                    var x = usize(0);
                     while (x < font.width) : (x += 1) {
-                        var color: u8 = undefined;
+                        var color = u8(0);
                         if ((fontEmbed[idx]) & mask == 0) {
                             color = 0;
                         } else {

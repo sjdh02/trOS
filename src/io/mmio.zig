@@ -5,7 +5,7 @@ const regs = types.regs;
 const Register = regs.Register;
 
 /// Base address for the MMIO operations.
-pub const MMIO_BASE: u32 = 0x3F000000;
+pub const MMIO_BASE = u32(0x3F000000);
 
 // @TODO @PENDING-FIX: We should mark the register arguments below as compile time
 // and then use @compileError in the bad bracnhes to catch bad register types at
