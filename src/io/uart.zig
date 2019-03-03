@@ -1,12 +1,13 @@
 const std = @import("std");
-const index = @import("../index.zig");
+const io = @import("../io.zig");
+const types = @import("../types.zig");
 
-const mmio = index.mmio;
-const gpio = index.gpio;
-const mbox = index.mbox;
+const mmio = io.mmio;
+const gpio = io.gpio;
+const mbox = io.mbox;
 
-const Register = index.regs.Register;
-const NoError = index.errorTypes.NoError;
+const Register = types.regs.Register;
+const NoError = types.errorTypes.NoError;
 
 /// Track whether we've initialized the UART yet
 pub var initState: bool = false;
@@ -17,10 +18,10 @@ pub const UartStream = struct {
     UART_MU_LSR: Register,
 
     /// Initialize a `UartStream` with a given IO and LSR address.
-    pub fn init(io: Register, lsr: Register) UartStream {
+    pub fn init(ioRegister: Register, lsRegister: Register) UartStream {
         return UartStream{
-            .UART_MU_IO = io,
-            .UART_MU_LSR = lsr,
+            .UART_MU_IO = ioRegister,
+            .UART_MU_LSR = lsRegister,
         };
     }
 

@@ -1,5 +1,6 @@
-const index = @import("index.zig");
-const errorTypes = index.errorTypes;
+const errors = @import("errors.zig");
+const io = @import("../io.zig");
+const errorTypes = errors.errorTypes;
 
 pub const Register = union(enum) {
     ReadOnly: u32,
@@ -9,8 +10,8 @@ pub const Register = union(enum) {
 
 test "Register Union" {
     const std = @import("std");
-    const write = index.mmio.write;
-    const read = index.mmio.read;
+    const write = io.mmio.write;
+    const read = io.mmio.read;
     const x = Register{ .WriteOnly = 0xDEADBEEF };
     const y = Register{ .ReadOnly = 0xDEADBEEF };
     const z = Register{ .ReadWrite = 0xDEADBEEF };

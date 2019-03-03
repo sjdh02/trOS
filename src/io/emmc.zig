@@ -1,11 +1,12 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const index = @import("../index.zig");
+const io = @import("../io.zig");
+const types = @import("../types.zig");
 
-const mmio = index.mmio;
-const uart = index.uart;
-const SDError = index.errorTypes.SDError;
-const Register = index.regs.Register;
+const mmio = io.mmio;
+const uart = io.uart;
+const SDError = types.errorTypes.SDError;
+const Register = types.regs.Register;
 
 // NOTE(sam): this is pretty much a direct port of https://github.com/bztsrc/raspi3-tutorial/0B_readsector.
 

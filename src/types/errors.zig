@@ -5,7 +5,7 @@ pub const SDError = error {
     GeneralError,
     ReadError,
     BufferError,
-    Ok, // Imply that nothing "failed", but something probably didn't happen that we wanted
+    ClockError,
 };
 
 pub const NoError = error{};

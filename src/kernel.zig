@@ -1,7 +1,10 @@
 const builtin = @import("builtin");
-const uart = @import("index.zig").uart;
-const util = @import("index.zig").util;
-const framebuffer = @import("index.zig").framebuffer;
+const io = @import("io.zig");
+const vga = @import("vga.zig");
+const uart = io.uart;
+const util = @import("util.zig");
+const emmc = io.emmc;
+const framebuffer = vga.framebuffer;
 
 // TODO(sam): Take in new boot images from the serial port for easier real hardware testing.
 

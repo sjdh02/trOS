@@ -1,13 +1,14 @@
 const std = @import("std");
-const index = @import("../index.zig");
+const io = @import("../io.zig");
+const types = @import("../types.zig");
 
-const gpio = index.gpio;
-const mmio = index.mmio;
-const mbox = index.mbox;
-const uart = index.uart;
+const gpio = io.gpio;
+const mmio = io.mmio;
+const mbox = io.mbox;
+const uart = io.uart;
 
-const Register = index.regs.Register;
-const NoError = index.errorTypes.NoError;
+const Register = types.regs.Register;
+const NoError = types.errorTypes.NoError;
 
 const fontEmbed = @embedFile("font.psf");
 

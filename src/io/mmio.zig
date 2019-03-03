@@ -1,6 +1,6 @@
 const AtomicOrder = @import("builtin").AtomicOrder;
-const index = @import("../index.zig");
-const regs = index.regs;
+const types = @import("../types.zig");
+const regs = types.regs;
 
 const Register = regs.Register;
 
