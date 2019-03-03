@@ -7,14 +7,14 @@ pub fn build(b: *Builder) !void {
     const want_pty = b.option(bool, "pty", "Create a separate serial port path") orelse false;
 
     const mode = b.standardReleaseOptions();
-    const exe = b.addStaticExecutable("tOS", "src/kernel.zig");
+    const exe = b.addStaticExecutable("trOS", "src/kernel.zig");
     exe.addAssemblyFile("src/asm/boot.S");
-    exe.addIncludeDir("src/vga");
+    //exe.addIncludeDir("src/vga");
     exe.setBuildMode(mode);
 
     exe.setLinkerScriptPath("./linker.ld");
     // Use eabihf for freestanding arm code with hardware float support
-    exe.setTarget(builtin.Arch.aarch64v8, builtin.Os.freestanding, builtin.Environ.eabihf);
+    exe.setTarget(builtin.Arch{ .aarch64 = builtin.Arch.Arm64.v8 }, builtin.Os.freestanding, builtin.Abi.eabihf);
 
     const qemu = b.step("qemu", "run kernel in qemu");
     var qemu_args = std.ArrayList([]const u8).init(b.allocator);
