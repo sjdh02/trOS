@@ -6,6 +6,8 @@ const util = @import("util.zig");
 const emmc = io.emmc;
 const framebuffer = vga.framebuffer;
 
+const Version = util.Version;
+
 // TODO(sam): Take in new boot images from the serial port for easier real hardware testing.
 
 // TODO(sam): Parse input from UART0 and handle commands. Should just be able to
@@ -26,7 +28,9 @@ pub fn panic(msg: []const u8, error_stack_trace: ?*builtin.StackTrace) noreturn 
 
 export fn kmain() noreturn {
     uart.init();
+    uart.write("trOS v{}\r", Version);
     framebuffer.init().?;
+    framebuffer.write("trOS v{}\r", Version);
     while (true) {
         const x = uart.get();
         uart.put(x);

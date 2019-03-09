@@ -12,8 +12,6 @@ const Register = types.regs.Register;
 const NoError = types.errorTypes.NoError;
 const Version = util.Version;
 
-const fontEmbed = @embedFile("font.psf");
-
 /// Respresent a PSF font.
 const PSFFont = packed struct {
     magic: u32,
@@ -26,17 +24,20 @@ const PSFFont = packed struct {
     width: u32,
 };
 
+const FontEmbed = @embedFile("font.psf");
+
 const Width = u32(1920);
 const Height = u32(1080);
 const Pitch = u32(7680);
 
 var column = u32(0);
 var row = u32(0);
+
 // @NOTE: This should work well for on-the-fly font changes.
 // For example, we could start with a non-unicode font, then
 // swap to one if the need arises and continue printing seemlessly.
-var font: *const PSFFont = @ptrCast(*const PSFFont, &fontEmbed);
-var ptr: [*]volatile u8 = undefined;
+var Font: *const PSFFont = @ptrCast(*const PSFFont, &FontEmbed);
+var LFB: [*]volatile u8 = undefined;
 
 pub fn init() ?void {
     mbox.mbox[0] = 35*4;
@@ -87,10 +88,72 @@ pub fn init() ?void {
         std.debug.assert(mbox.mbox[5] == 1920);
         std.debug.assert(mbox.mbox[6] == 1080);
         std.debug.assert(mbox.mbox[33] == 7680);
-        ptr = @intToPtr([*]volatile u8, mbox.mbox[28]);
-        write("trOS v{}\nREADY:> ", Version);
+        LFB = @intToPtr([*]volatile u8, mbox.mbox[28]);
     } else {
         return null;
+    }
+}
+
+pub fn put(c: u8) void {
+    const bytesPerLine = (Font.width + 7) / 8;
+    var offset = (row * Font.height * Pitch) + (column * (Font.width + 1) * 4);
+    var idx = usize(0);
+    switch(c) {
+        '\r' => {
+            for ("\nREADY:> ") |d|
+                put(d);
+        },
+        '\n' => {
+            column = 0;
+            row += 1;
+        },
+        // backspace
+        8 => {
+            if (column > 8)
+                column -= 1;
+            offset = (row * Font.height * Pitch) + (column * (Font.width + 1) * 4);
+            var y = usize(0);
+            while (y < Font.height) : (y += 1) {
+                var line = offset;
+                var x = usize(0);
+                while (x < Font.width) : (x += 1) {
+                    LFB[line] = 0;
+                    LFB[line + 1] = 0;
+                    LFB[line + 2] = 0;
+                    line += 4;
+                }
+                offset += Pitch;
+            }
+        },
+        else => {
+            if (c < Font.numglyph) {
+                idx += (Font.headersize + (c * Font.bytesPerGlyph));
+            } else {
+                idx += (Font.headersize + (0 * Font.bytesPerGlyph));
+            }
+            var y = usize(0);
+            while (y < Font.height) : (y += 1) {
+                var line = offset;
+                var mask = u32(1) << @truncate(u5, (Font.width - 1));
+                var x = usize(0);
+                while (x < Font.width) : (x += 1) {
+                    var color = u8(0);
+                    if ((FontEmbed[idx]) & mask == 0) {
+                        color = 0;
+                    } else {
+                        color = 255;
+                    }
+                    LFB[line] = color;
+                    LFB[line + 1] = color;
+                    LFB[line + 2] = color;
+                    mask >>= 1;
+                    line += 4;
+                }
+                idx += bytesPerLine;
+                offset += Pitch;
+            }
+            column += 1;
+        },
     }
 }
 
@@ -112,72 +175,8 @@ pub fn write(comptime data: []const u8, args: ...) void {
     std.fmt.format({}, NoError, writeHandler, data, args) catch |e| switch (e) {};
 }
 
-pub fn put(c: u8) void {
-    const bytesPerLine = (font.width + 7) / 8;
-    var offset = (row * font.height * Pitch) + (column * (font.width + 1) * 4);
-    var idx = usize(0);
-    switch(c) {
-        '\r' => {
-            writeBytes("\n");
-            writeBytes("READY:> ");
-        },
-        '\n' => {
-            column = 0;
-            row += 1;
-        },
-        // backspace
-        8 => {
-            if (column > 8)
-                column -= 1;
-            offset = (row * font.height * Pitch) + (column * (font.width + 1) * 4);
-            var y = usize(0);
-            while (y < font.height) : (y += 1) {
-                var line = offset;
-                var x = usize(0);
-                while (x < font.width) : (x += 1) {
-                    ptr[line] = 0;
-                    ptr[line + 1] = 0;
-                    ptr[line + 2] = 0;
-                    line += 4;
-                }
-                offset += Pitch;
-            }
-        },
-        else => {
-            if (c < font.numglyph) {
-                idx += (font.headersize + (c * font.bytesPerGlyph));
-            } else {
-                idx += (font.headersize + (0 * font.bytesPerGlyph));
-            }
-            var y = usize(0);
-            while (y < font.height) : (y += 1) {
-                var line = offset;
-                var mask = u32(1) << @truncate(u5, (font.width - 1));
-                var x = usize(0);
-                while (x < font.width) : (x += 1) {
-                    var color = u8(0);
-                    if ((fontEmbed[idx]) & mask == 0) {
-                        color = 0;
-                    } else {
-                        color = 255;
-                    }
-                    ptr[line] = color;
-                    ptr[line + 1] = color;
-                    ptr[line + 2] = color;
-                    mask >>= 1;
-                    line += 4;
-                }
-                idx += bytesPerLine;
-                offset += Pitch;
-            }
-            column += 1;
-        },
-    }
-}
-
-
 // @PENDING-FIX: Test fails with: "TODO buf_read_value_bytes packed struct"
-//test "PSFFont read test" {
+//test "Validate PSFFont" {
 //    const font = @ptrCast(*const PSFFont, &fontEmbed);
 //    uart.write("{}", font);
 //    std.debug.assert(font.magic == 2253043058);

@@ -1,7 +1,6 @@
 const std = @import("std");
 const io = @import("../io.zig");
 const types = @import("../types.zig");
-const util = @import("../util.zig");
 
 const mmio = io.mmio;
 const gpio = io.gpio;
@@ -9,58 +8,6 @@ const mbox = io.mbox;
 
 const Register = types.regs.Register;
 const NoError = types.errorTypes.NoError;
-const Version = util.Version;
-
-/// Struct to handle UART reads and writes.
-pub const UartStream = struct {
-    UART_MU_IO: Register,
-    UART_MU_LSR: Register,
-
-    /// Initialize a `UartStream` with a given IO and LSR address.
-    pub fn init(ioRegister: Register, lsRegister: Register) UartStream {
-        return UartStream{
-            .UART_MU_IO = ioRegister,
-            .UART_MU_LSR = lsRegister,
-        };
-    }
-
-    /// Write a `u8` to the location pointed to by the `UART_MU_IO` field
-    /// of the `UartStream`.
-    pub fn put(self: *const UartStream, c: u8) void {
-        while ((mmio.read(self.UART_MU_LSR).? & 0x20) != 0) {}
-        switch (c) {
-            '\n' => {
-                mmio.write(self.UART_MU_IO, '\n').?;
-                mmio.write(self.UART_MU_IO, '\r').?;
-            },
-            '\r' => {
-                mmio.write(self.UART_MU_IO, '\n').?;
-                mmio.write(self.UART_MU_IO, '\r').?;
-                write("READY:> ");
-            },
-            else => {
-                mmio.write(self.UART_MU_IO, c).?;
-            }
-        }
-    }
-
-    /// Recieve a `u8` from the location pointed to be the `UART_MU_IO` field
-    /// of the `UartStream`.
-    pub fn get(self: *const UartStream) u8 {
-        while ((mmio.read(self.UART_MU_LSR).? & 0x10) != 0) {}
-        return @truncate(u8, mmio.read(self.UART_MU_IO).?);
-    }
-
-    /// Write a `[]const u8` to the location pointed to by the `UART_MU_IO`
-    /// field in the `UartStream`. This function will automatically translate
-    /// `'\n' into `'\r'`. Note that this is simply a wrapper around `put`
-    /// that is able to take more useful input values.
-    pub fn writeBytes(self: *const UartStream, data: []const u8) void {
-        for (data) |c| {
-            self.put(c);
-        }
-    }
-};
 
 // See page 90 of the BCM2835 manual for information about most of these.
 
@@ -113,29 +60,41 @@ pub fn init() void {
     mmio.write(UART_FBRD, 0xB).?;
     mmio.write(UART_LCRH, 0b11 << 15).?;
     mmio.write(UART_CR, 0x301).?;
-
-    write("trOS v{}\nREADY:> ", Version);
 }
 
-/// `Stream` is a `UartStream` that is instantiated with the IO and LSR
-/// addresses for UART0.
-const Stream = UartStream.init(UART_DR, UART_FR);
-
-/// `put` is a public wrapper around the `put` function contained within
-/// `UartStream`.
 pub fn put(c: u8) void {
-    Stream.put(c);
+    while ((mmio.read(UART_FR).? & 0x20) != 0) {}
+    switch (c) {
+        '\n' => {
+            mmio.write(UART_DR, '\n').?;
+            mmio.write(UART_DR, '\r').?;
+        },
+        '\r' => {
+            mmio.write(UART_DR, '\n').?;
+            mmio.write(UART_DR, '\r').?;
+            for ("READY:> ") |d|
+                put(d);
+        },
+        else => {
+            mmio.write(UART_DR, c).?;
+        }
+    }
 }
 
-/// `get` is a public wrapper around the `get` function contained within
-/// `UartStream`.
 pub fn get() u8 {
-    return Stream.get();
+    while ((mmio.read(UART_FR).? & 0x10) != 0) {}
+    return @truncate(u8, mmio.read(UART_DR).?);
+}
+
+pub fn writeBytes(data: []const u8) void {
+    for (data) |c| {
+        put(c);
+    }
 }
 
 /// `writeHandler` handles write requests for UART0 from `write`.
 fn writeHandler(context: void, data: []const u8) NoError!void {
-    Stream.writeBytes(data);
+    writeBytes(data);
 }
 
 /// `write` manages all writes for UART0. It takes formatted arguments, in the
