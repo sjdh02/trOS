@@ -8,6 +8,9 @@ const regs = types.regs;
 
 const Register = regs.Register;
 
+// Embedded version number
+pub const Version = "0.1.1";
+
 /// Hang the system with an infinite while loop.
 pub fn hang() noreturn {
     while (true) {}

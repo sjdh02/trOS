@@ -25,9 +25,8 @@ pub fn panic(msg: []const u8, error_stack_trace: ?*builtin.StackTrace) noreturn 
 }
 
 export fn kmain() noreturn {
-    uart.write("tOS v0.1\n");
-    framebuffer.write("READY:> ");
-    uart.write("READY:> ");
+    uart.init();
+    framebuffer.init().?;
     while (true) {
         const x = uart.get();
         uart.put(x);

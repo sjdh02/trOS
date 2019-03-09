@@ -1,6 +1,7 @@
 const std = @import("std");
 const io = @import("../io.zig");
 const types = @import("../types.zig");
+const util = @import("../util.zig");
 
 const mmio = io.mmio;
 const gpio = io.gpio;
@@ -8,9 +9,7 @@ const mbox = io.mbox;
 
 const Register = types.regs.Register;
 const NoError = types.errorTypes.NoError;
-
-/// Track whether we've initialized the UART yet.
-pub var initState: bool = false;
+const Version = util.Version;
 
 /// Struct to handle UART reads and writes.
 pub const UartStream = struct {
@@ -37,7 +36,7 @@ pub const UartStream = struct {
             '\r' => {
                 mmio.write(self.UART_MU_IO, '\n').?;
                 mmio.write(self.UART_MU_IO, '\r').?;
-                self.writeBytes("READY:> ");
+                write("READY:> ");
             },
             else => {
                 mmio.write(self.UART_MU_IO, c).?;
@@ -114,7 +113,8 @@ pub fn init() void {
     mmio.write(UART_FBRD, 0xB).?;
     mmio.write(UART_LCRH, 0b11 << 15).?;
     mmio.write(UART_CR, 0x301).?;
-    initState = true;
+
+    write("trOS v{}\nREADY:> ", Version);
 }
 
 /// `Stream` is a `UartStream` that is instantiated with the IO and LSR
@@ -142,7 +142,5 @@ fn writeHandler(context: void, data: []const u8) NoError!void {
 /// same manner that `std.debug.warn()` does. It then passes them to `writeHandler`
 /// for writing out.
 pub fn write(comptime data: []const u8, args: ...) void {
-    if (!initState)
-        init();
     std.fmt.format({}, NoError, writeHandler, data, args) catch |e| switch (e) {};
 }
