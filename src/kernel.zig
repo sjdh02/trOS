@@ -12,9 +12,7 @@ const Version = util.Version;
 
 // TODO(sam): Parse input from UART0 and handle commands. Should just be able to
 // read into a buffer, track the index, slice up to it (buffer[0..idx]) and
-// take that as a []const u8 for matching as a command. We may need to implement
-// a string.contains function of some kind since there will be arguments present
-// as well.
+// take that as a []const u8 for matching as a command.
 
 // TODO(sam): Re-do docs.
 
