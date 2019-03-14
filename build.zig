@@ -7,7 +7,7 @@ pub fn build(b: *Builder) void {
     const want_pty = b.option(bool, "pty", "Create a separate serial port path") orelse false;
 
     const mode = b.standardReleaseOptions();
-    const exe = b.addStaticExecutable("trOS", "src/kernel.zig");
+    const exe = b.addExecutable("trOS", "src/kernel.zig");
     exe.addAssemblyFile("src/asm/boot.S");
     exe.setBuildMode(mode);
 
